@@ -377,7 +377,7 @@ void App::Command(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			if ( !strcmp(szPass, szPassVerify) )
 			{
 				// Run conversion
-				if ( Convert(szSource, szDest, szIcon, szPass, stricmp(szPass, "N/A")) == true )
+				if ( Convert(szSource, szDest, szIcon, szPass, _stricmp(szPass, "N/A")) == true )
 					Util_ShowInfoIDS(IDS_CONVERTCOMPLETE);
 			}
 			else
@@ -627,7 +627,7 @@ bool App::CmdLineMode(void)
 	}
 	else
 	{
-		if ( stricmp(szTemp, "/in") )
+		if ( _stricmp(szTemp, "/in") )
 		{
 			Util_ShowInfoIDS(IDS_CMDLINEPARAMS);
 			return false;
@@ -639,13 +639,15 @@ bool App::CmdLineMode(void)
 	{
 		// Check next param (/out or /icon or /pass)
 		g_oCmdLine.GetNextParam(szTemp);
-		if ( !stricmp(szTemp, "/out") )
+		if ( !_stricmp(szTemp, "/out") )
 			g_oCmdLine.GetNextParam(szOut);
-		else if ( !stricmp(szTemp, "/icon") )
+		else if ( !_stricmp(szTemp, "/icon") )
 			g_oCmdLine.GetNextParam(szIcon);
-		else if ( !stricmp(szTemp, "/pass") )
+		else if ( !_stricmp(szTemp, "/pass") )
 			g_oCmdLine.GetNextParam(szPass);
-		else if ( !stricmp(szTemp, "/NoDecompile") )
+		else if ( !_stricmp(szTemp, "/bin") )
+			g_oCmdLine.GetNextParam(m_szAutoItSC);
+		else if ( !_stricmp(szTemp, "/NoDecompile") )
 			allow_decompile = false; // Override the default set earlier.
 		else if ( szTemp[0] != '\0' )	// not /out /icon /pass or blank - error
 		{
@@ -1316,7 +1318,7 @@ void SetWorkingDir(char *aNewDir)
 	// Otherwise, GetCurrentDirectory() succeeded, so it's appropriate to compare what we asked for to what
 	// was received.
 	if (aNewDir[0] && aNewDir[1] == ':' && !aNewDir[2] // Root with missing backslash. Relies on short-circuit boolean order.
-		&& stricmp(aNewDir, actual_working_dir)) // The root directory we requested didn't actually get set. See below.
+		&& _stricmp(aNewDir, actual_working_dir)) // The root directory we requested didn't actually get set. See below.
 	{
 		// There is some strange OS behavior here: If the current working directory is C:\anything\...
 		// and SetCurrentDirectory() is called to switch to "C:", the function reports success but doesn't
@@ -1639,7 +1641,7 @@ ResultType LoadIncludedFile(FILE *aTarget, HWND aStatusBar, HS_EXEArc_Write &oWr
 	// to support automatic "include once" behavior.  So just ignore repeats:
 	if (!aAllowDuplicateInclude)
 		for (int f = 0; f < source_file_index; ++f)  // Here, source_file_index==sSourceFileCount
-			if (!stricmp(sSourceFile[f], full_path)) // Case insensitive like the file system.
+			if (!_stricmp(sSourceFile[f], full_path)) // Case insensitive like the file system.
 				return OK;
 
 	UCHAR *script_buf = NULL;  // Init for the case when the buffer isn't used (non-standalone mode).
@@ -1897,7 +1899,8 @@ ResultType LoadIncludedFile(FILE *aTarget, HWND aStatusBar, HS_EXEArc_Write &oWr
 			// FileInstall, Process`, log`, and completion.txt
 			ConvertEscapeSequences(converted_line, literal_map);
 			// Find the first non-literal delimiter:
-			for (int j = 0; converted_line[j] && (converted_line[j] != g_delimiter || literal_map[j]); ++j);
+			int j;
+			for (j = 0; converted_line[j] && (converted_line[j] != g_delimiter || literal_map[j]); ++j);
 			if (converted_line[j]) // It was found.
 				converted_line[j] = '\0';
 			// Fix for v1.0.46.13: The second below used to be indented so that it belongs to
@@ -2131,7 +2134,7 @@ bool App::CompileScript(char *szScript, char *szDest, char *szPass, HS_EXEArc_Wr
 	//	while (LineTokens[ivPos].m_nType != TOK_END)
 	//	{
 	//		// Is this a fileinstall function?
-	//		if (LineTokens[ivPos].m_nType == TOK_FUNCTION && (!stricmp("FileInstall", LineTokens[ivPos].m_Variant.szValue())) )
+	//		if (LineTokens[ivPos].m_nType == TOK_FUNCTION && (!_stricmp("FileInstall", LineTokens[ivPos].m_Variant.szValue())) )
 	//		{
 	//			if (LineTokens[ivPos+1].m_nType == TOK_LEFTPAREN && LineTokens[ivPos+2].m_nType == TOK_VARIANT)
 	//			{
@@ -2214,7 +2217,7 @@ bool App::ChangeResources(const char *szDest, const char *szIcon)
 		return false;
 	}
 
-    fstat(fileno(in), &ST);
+    fstat(_fileno(in), &ST);
     if (ST.st_size == 0)
 	{
 		Util_ShowErrorIDS(IDS_E_WRITEDEST);

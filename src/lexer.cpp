@@ -423,7 +423,7 @@ void App::Lexer_KeywordOrFunc(const char *szLine, uint &iPos, Token &rtok, char 
 	i = 0;
 	while (i < K_MAX)
 	{
-		if (!stricmp(m_szKeywords[i], szTemp) )
+		if (!_stricmp(m_szKeywords[i], szTemp) )
 			break;
 
 		i++;

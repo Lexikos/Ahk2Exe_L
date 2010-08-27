@@ -25,6 +25,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+#define _CRT_SECURE_NO_WARNINGS
+
 
 // Only use the includes here if running Visual C - it is really slow under
 // MingW to use this method so we will comment out the headers unless the

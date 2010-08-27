@@ -673,25 +673,25 @@ int AString::strcmp(const char *szStr) const
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// stricmp()
+// _stricmp()
 // calls the C strcmp routine for two AStrings
 ///////////////////////////////////////////////////////////////////////////////
 
-int AString::stricmp(const AString &sStr) const
+int AString::_stricmp(const AString &sStr) const
 {
-	return ::stricmp(m_szText, sStr.m_szText);
+	return ::_stricmp(m_szText, sStr.m_szText);
 
-} // stricmp()
+} // _stricmp()
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// stricmp()
+// _stricmp()
 // calls the C strcmp routine for AString and a C string
 ///////////////////////////////////////////////////////////////////////////////
 
-int AString::stricmp(const char *szStr) const
+int AString::_stricmp(const char *szStr) const
 {
-	return ::stricmp(m_szText, szStr);
+	return ::_stricmp(m_szText, szStr);
 
-} // stricmp()
+} // _stricmp()
 

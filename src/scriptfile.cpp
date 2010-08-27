@@ -147,7 +147,7 @@ int AutoIt_ScriptFile::AddIncludeName(const char *szFileName)
 	// Does this file already exist?
 	for (int i=0; i < m_nNumIncludes; ++i)
 	{
-		if (!stricmp(m_szIncludeIDs[i], szFullPath))
+		if (!_stricmp(m_szIncludeIDs[i], szFullPath))
 			return i;
 	}
 
@@ -390,7 +390,7 @@ bool AutoIt_ScriptFile::IncludeParse(const char *szLine, char *szTemp)
 		szTemp[j++] = szLine[i++];
 	szTemp[j] = '\0';							// Terminate
 
-	if (stricmp(szTemp, "#include"))
+	if (_stricmp(szTemp, "#include"))
 		return false;							// No include directive
 
 	// Now find "

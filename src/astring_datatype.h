@@ -57,8 +57,8 @@ public:
 	void			strip_trailing(const char *szInput);			// Strip trailing chars
 	int				strcmp(const AString &sStr) const;				// Use C strcmp() routine (compare with AString)
 	int				strcmp(const char *szStr) const;				// Use C strcmp() routine (compare with C string)
-	int				stricmp(const AString &sStr) const;				// Use C stricmp() routine (compare with AString)
-	int				stricmp(const char *szStr) const;				// Use C stricmp() routine (compare with C string)
+	int				_stricmp(const AString &sStr) const;				// Use C _stricmp() routine (compare with AString)
+	int				_stricmp(const char *szStr) const;				// Use C _stricmp() routine (compare with C string)
 
 
 	// Properties
