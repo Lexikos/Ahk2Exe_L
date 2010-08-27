@@ -1,0 +1,17 @@
++#ifdef __GNUC__
++    CONTROL         "tightvncbmp",IDC_STATIC,"Static",SS_BITMAP | SS_SUNKEN,19,7,81,66
++#else
+     CONTROL         106,IDC_STATIC,"Static",SS_BITMAP | SS_SUNKEN,19,7,81,66
++#endif
+
+ 
+ /////////////////////////////////////////////////////////////////////////////
+ // Bitmap
+ //
+ 
++#ifdef __GNUC__
++tightvncbmp             BITMAP  DISCARDABLE     "tightvnc.bmp"
++#else
+ IDB_VNCBITMAP           BITMAP  DISCARDABLE     "tightvnc.bmp"
++#endif
+ 
