@@ -50,6 +50,9 @@
 	#include <sys/stat.h>
 #endif
 
+// Define this to enable the Compression menu. Must also be defined in resource.h.
+//#define SHOW_COMPRESSION_MENU
+
 ///////////////////////////////////////////////////////////////////////////////
 
 #endif

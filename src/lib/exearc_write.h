@@ -60,4 +60,25 @@ private:
 };
 
 
+#include "ResourceEditor.h"
+
+// Abstraction for x64:
+class EXEArc_Write
+{
+private:
+	HS_EXEArc_Write *m_arc; // x86
+	CResourceEditor *m_res; // x64
+	BYTE *m_buf;
+public:
+	EXEArc_Write() : m_arc(NULL), m_res(NULL), m_buf(NULL) {}
+
+	int Open(const char *szEXEArcFile, const char *szPwd, UINT nCompressionLevel);
+	int FileAdd(const char *szFileName, const char *szFileID);
+	int Save(const char *szEXEArcFile);
+	void Close();
+
+	~EXEArc_Write();
+};
+
+
 #endif

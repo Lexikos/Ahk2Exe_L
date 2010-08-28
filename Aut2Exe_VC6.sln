@@ -1,3 +1,4 @@
+﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual C++ Express 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Aut2Exe_VC6", "Aut2Exe_VC6.vcproj", "{886DC67F-4B20-4BDE-9A1C-4DBEAB65799F}"
@@ -15,14 +16,5 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(SourceCodeControl) = preSolution
-		SccNumberOfProjects = 2
-		SccLocalPath0 = .
-		CanCheckoutShared = false
-		SolutionUniqueID = {ABB24C86-2FDE-4FDF-81D9-4F70FA85F0FE}
-		SccProjectUniqueName1 = Aut2Exe_VC6.vcproj
-		SccLocalPath1 = .
-		CanCheckoutShared = false
 	EndGlobalSection
 EndGlobal

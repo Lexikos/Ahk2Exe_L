@@ -139,7 +139,9 @@ BOOL App::Create(int nCmdShow)
 	// Set any defaults for the dialog
 	SetDlgItemText(g_hWnd, IDC_ICONEDIT, m_szLastIcon);
 	SendDlgItemMessage(g_hWnd, IDC_PASSEDIT, EM_LIMITTEXT, MAX_PASSLEN, 0);
+#ifdef SHOW_COMPRESSION_MENU
 	CheckMenuItem(GetMenu(g_hWnd), ID_COMPRESSION_LOWEST + m_dwLastCompression, MF_CHECKED);
+#endif
 
 
 
@@ -350,6 +352,7 @@ void App::Command(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			SetFocus(hCtrl);
 			break;
 
+#ifdef SHOW_COMPRESSION_MENU
 		case ID_COMPRESSION_LOWEST:
 		case ID_COMPRESSION_LOW:
 		case ID_COMPRESSION_NORMAL:
@@ -363,6 +366,7 @@ void App::Command(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			CheckMenuItem(GetMenu(hWnd), LOWORD(wParam), MF_CHECKED);
 			m_dwLastCompression = LOWORD(wParam) - ID_COMPRESSION_LOWEST;
 			break;
+#endif
 
 
 		case ID_CONVERT:
@@ -717,7 +721,7 @@ bool App::ConvertCheckFilenames(const char *szSource, char *szDest)
 
 bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass, BOOL aAllowDecompile) // BOOL vs. bool avoids compiler's performance warning in some callers.
 {
-	FILE	*fdest, *fbin;
+	FILE	*fdest;
 	char	szScriptTemp[_MAX_PATH+1];
 	char	szTempPath[_MAX_PATH+1];
 	FILE	*fScript;
@@ -726,8 +730,6 @@ bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass, BOOL
 	char	*szFilePart;
 
 	char	szCmdLine[_MAX_PATH*3]; // v1.0.47: Increased from _MAX_PATH+1 to allow room for two full-paths with extra switches/options.
-
-	unsigned char	ch;
 
 	// Make all the filenames are fullpaths (not relative)
 	Util_GetFullPath(szDest);
@@ -746,56 +748,77 @@ bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass, BOOL
 	SetCursor(LoadCursor(NULL, IDC_WAIT));
 
 	// Copy our sc.bin file to the destination
-	if ( (fbin = fopen(m_szAutoItSC, "rb")) == NULL)
+	if (!CopyFile(m_szAutoItSC, szDest, FALSE))
 	{
 		SetCursor(LoadCursor(NULL, IDC_ARROW));	// Reset cursor
-		Util_ShowErrorIDS(IDS_E_READSCBIN);
+		Util_ShowErrorIDS(IDS_E_COPYSCBIN);
 		return false;
 	}
+
 	
-	// Open the dest file (overwrite if required)
-	if ( (fdest = fopen(szDest, "w+b")) == NULL )
-	{
-		SetCursor(LoadCursor(NULL, IDC_ARROW));	// Reset cursor
-		fclose(fbin);
-		Util_ShowErrorIDS(IDS_E_WRITEDEST);
-		return false;
-	}
-
-	// Copy the bin file to the destination then close the bin file
-	while ( fread(&ch, 1, 1, fbin) != 0)
-		fwrite(&ch, 1, 1, fdest);
-
-	fclose(fbin);								// Close sc.bin
-	fclose(fdest);								// Close destination
-
-
 	// Now, change the resources as required (icons, versioninfo)
-	if (ChangeResources(szDest, szIcon) == false)
+	if (*szIcon) // AutoHotkey: version info isn't changed, so skip this step if no icon was specified.
 	{
-		SetCursor(LoadCursor(NULL, IDC_ARROW));	// Reset cursor
-		DeleteFile(szDest);						// The output is trashed -- delete it.
-		return false;
+		if (ChangeResources(szDest, szIcon) == false)
+		{
+			SetCursor(LoadCursor(NULL, IDC_ARROW));	// Reset cursor
+			DeleteFile(szDest);						// The output is trashed -- delete it.
+			return false;
+		}
 	}
 
 
-	// Compress the stub file with UPX
-	StatusbarWrite("Compressing stub executable with upx.exe...");
-	sprintf(szCmdLine, "\"%supx.exe\" --best --filter=73 --lzma --compress-icons=0 \"%s\""
-		, m_szAut2ExeDir // Contains a trailing backslash.
-		, szDest);
-//	MessageBox(NULL, szCmdLine, "", MB_OK);
-	Util_Run(szCmdLine, m_szAut2ExeDir, SW_HIDE, true);
-	// v1.0.42.01: Tolerate the absence of UPX.exe so that a non-compressed EXE file can be created.
-	// Commenting out the following seems to allow such an EXE to be created and it does launch okay:
-	//if (...it failed...)
-	//{
-	//	StatusbarWrite(IDS_READY);				// Reset statusbar
-	//	SetCursor(LoadCursor(NULL, IDC_ARROW));	// Reset cursor
-	//	DeleteFile(szDest);						// The output is trashed -- delete it.
-	//	Util_ShowErrorIDS(IDS_E_UPXRUN);
-	//	return false;
-	//}
+	// Currently some work is repeated:
+	//
+	//	1) ChangeResources() and oWrite.Open() both use their own CResourceEditor. This involves:
+	//		a) Opening, reading and closing the file and "deserializing" the resource section.
+	//		b) "Serializing" the resource section, opening, overwriting and closing the file.
+	//
+	//	2) Below makes a decision about which method will be used (HS_EXEArc_Write or PE resources)
+	//	   by checking the target architecture of the file. This is done again in oWrite.Open(),
+	//	   but in that instance it passes the file data on to CResourceEditor.
+	//
+	// This could be optimized by reading the file into memory only once, initializing one
+	// CResourceEditor for use wherever needed, and saving resources back to file when done.
+	// However, the resource editor probably must be closed before calling HS_EXEArc_Write::Open().
+	// Since it isn't certain how permanent the current x86/x64 implementations are, optimization
+	// at this point doesn't seem worthwhile.
+
+	// If HS_EXEArc_Write will be used, the exe must be packed first since packing would
+	// corrupt the archive. If PE resources will be used instead, packing should be done
+	// later so that the script and FileInstalls are compressed, giving them some measure
+	// of protection depending on the packer.
+	//
+	// Consider packing non-critical: if something below fails, just continue.
+	// (However, those instances will probably fail at a later stage anyway.)
+	bool packNow = false, packLater = false;
+	if (fdest = fopen(szDest, "rb"))
+	{
+		IMAGE_DOS_HEADER dosHeader;
+		IMAGE_NT_HEADERS ntHeaders;
+		if (   fread(&dosHeader, sizeof(dosHeader), 1, fdest) == 1	 )
+		if (   fseek(fdest, dosHeader.e_lfanew, SEEK_SET)	  == 0	 )
+		if (   fread(&ntHeaders, sizeof(ntHeaders), 1, fdest) == 1	 )
+		{
+			packNow = (ntHeaders.FileHeader.Machine == IMAGE_FILE_MACHINE_I386);
+			packLater = !packNow;
+		}
+		fclose(fdest);
+	}
+
+
+	// Build the packer command line, used here or at the end of this function.
+	//sprintf(szCmdLine, "\"%supx.exe\" --best --filter=73 --lzma --compress-icons=0 \"%s\""
+	sprintf(szCmdLine, "\"%smpress.exe\" -x \"%s\""
+			, m_szAut2ExeDir // Contains a trailing backslash.
+			, szDest);
+
+	if (packNow)
+	{
+		// Compress the stub file
+		StatusbarWrite("Compressing stub executable...");
+		Util_Run(szCmdLine, m_szAut2ExeDir, SW_HIDE, true);
+	}
 
 	StatusbarWrite(IDS_READY);		// Reset statusbar
 
@@ -834,12 +857,11 @@ bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass, BOOL
 	SetCurrentDirectory(g_ScriptDir);
 		
 	// Open our exe file for archive operations (max compression - range is 0-4)
-	HS_EXEArc_Write	oWrite;
+	EXEArc_Write	oWrite;
 	if ( oWrite.Open(szDest, szPass, m_dwLastCompression) != HS_EXEARC_E_OK )
 	{
 		Util_ShowErrorIDS(IDS_E_CREATEARCHIVE);
 		return false;
-
 	}
 
 	// Read the script (and any includes) and write to fScript
@@ -872,6 +894,13 @@ bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass, BOOL
 	}
 	oWrite.Close(); // AutoHotkey: added.
 
+	if (packLater)
+	{
+		// Compress the final executable
+		StatusbarWrite("Compressing final executable...");
+		Util_Run(szCmdLine, m_szAut2ExeDir, SW_HIDE, true);
+	}
+
 	// Change cursor back to an arrow
 	SetCursor(LoadCursor(NULL, IDC_ARROW));
 
@@ -881,6 +910,7 @@ bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass, BOOL
 	// Delete our temporary script file
 	DeleteFile(szScriptTemp);
 
+	StatusbarWrite("");
 	return true;
 
 } // Convert()
@@ -1338,9 +1368,9 @@ void SetWorkingDir(char *aNewDir)
 
 
 // Prototype to allow mutual recursion:
-ResultType LoadIncludedFile(FILE *aTarget, HWND aStatusBar, HS_EXEArc_Write &oWrite
+ResultType LoadIncludedFile(FILE *aTarget, HWND aStatusBar, EXEArc_Write &oWrite
 	, char *aFileSpec, bool aAllowDuplicateInclude, bool aIgnoreLoadFailure);
-inline ResultType IsPreprocessorDirective(FILE *aTarget, HWND aStatusBar, HS_EXEArc_Write &oWrite
+inline ResultType IsPreprocessorDirective(FILE *aTarget, HWND aStatusBar, EXEArc_Write &oWrite
 	, char *aBuf, bool &aIsInclude)
 // THIS ONLY HAS A SUBSET of the preprocessor directives.  The others do not need to be handled
 // until load-time (when the EXE is run), and thus are handled in the main source code and are
@@ -1616,7 +1646,7 @@ void ConvertEscapeSequences(char *aBufToConvert, char *aLiteralMap)
 
 
 
-ResultType LoadIncludedFile(FILE *aTarget, HWND aStatusBar, HS_EXEArc_Write &oWrite
+ResultType LoadIncludedFile(FILE *aTarget, HWND aStatusBar, EXEArc_Write &oWrite
 	, char *aFileSpec, bool aAllowDuplicateInclude, bool aIgnoreLoadFailure)
 // Returns the number of non-comment lines that were loaded, or LOADING_FAILED on error.
 #define HOTKEY_FLAG "::"
@@ -1964,7 +1994,7 @@ ResultType LoadIncludedFile(FILE *aTarget, HWND aStatusBar, HS_EXEArc_Write &oWr
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-bool App::ScriptRead(const char *szFile, FILE *fScript, HS_EXEArc_Write &oWrite, char *aOutputScriptFilename) // AutoHotkey: added last two params.
+bool App::ScriptRead(const char *szFile, FILE *fScript, EXEArc_Write &oWrite, char *aOutputScriptFilename) // AutoHotkey: added last two params.
 {
 	AutoIt_ScriptFile	oFile;
 //	const char			*szScriptLine;
@@ -2056,41 +2086,22 @@ bool App::ScriptRead(const char *szFile, FILE *fScript, HS_EXEArc_Write &oWrite,
 // to the destination exe file
 ///////////////////////////////////////////////////////////////////////////////
 
-bool App::CompileScript(char *szScript, char *szDest, char *szPass, HS_EXEArc_Write &oWrite
+bool App::CompileScript(char *szScript, char *szDest, char *szPass, EXEArc_Write &oWrite
 	, char *aInternalScriptName) // AutoHotkey: added last 2 params.
 {
 	char			szBuffer[AUT_MAX_LINESIZE+1];
-	AString			sBuffer;
-
-//	char			szTempFilename[_MAX_PATH+1];
-//	char			*szFilePart;
-//	FILE			*fptr;
-//	uint			ivPos;
-
 
 	// AutoHotkey: The file will be opened by the caller instead, so that it
 	// can add the FileInstall files during the parsing of the script and its
 	// includes, rather than afterward like AutoIt3:
 
 	//HS_EXEArc_Write	oWrite;
-	//// AutoHotkey: Disabled.
-	////VectorToken		LineTokens;					// Vector (array) of tokens for a line of script
-
-
-	//// Open our exe file for archive operations (max compression - range is 0-4)
-	//if ( oWrite.Open(szDest, szPass, m_dwLastCompression) != HS_EXEARC_E_OK )
-	//{
-	//	Util_ShowErrorIDS(IDS_E_CREATEARCHIVE);	
-	//	return false;
-
-	//}
 
 	// First, add our script to the archive with a special File ID
 	strcpy(szBuffer, "Compressing and adding: Master Script");
 	StatusbarWrite(szBuffer);
 
 	// AutoHotkey:
-	//if ( oWrite.FileAdd(szScript, ">AUTOIT SCRIPT<") != HS_EXEARC_E_OK )
 	if ( oWrite.FileAdd(szScript, aInternalScriptName) != HS_EXEARC_E_OK )
 	{
 		strcpy(szBuffer, "Error adding script file:\n\n");
@@ -2100,93 +2111,11 @@ bool App::CompileScript(char *szScript, char *szDest, char *szPass, HS_EXEArc_Wr
 		//oWrite.Close();
 		return false;
 	}
-
-	// AutoHotkey: This next section is disabled because all it does is search
-	// for and process FileInstall commands in the script, which for AutoHotkey
-	// has done already done at an earlier stage:
-
-	//// Open the temp script file for reading, we have already stored the script
-	//// So all we want now is all the "FileInstall, source, dest" commands
-	//if ( (fptr = fopen(szScript, "r")) == NULL )
-	//{
-	//	strcpy(szBuffer, "Error reading the temporary script file:\n\n");
-	//	strcat(szBuffer, szScript);
-	//	Util_ShowError(szBuffer);		
-	//	return false;
-	//}
-
-
-	//// Read in line by line
-	//while ( fgets(szBuffer, AUT_MAX_LINESIZE, fptr) )
-	//{
-	//	// Enforce our maximum line length
-	//	szBuffer[AUT_MAX_LINESIZE] = '\0';
-
-	//	// Copy to our native string class and strip leading and trailing whitespaces + newline
-	//	sBuffer = szBuffer;
-	//	sBuffer.strip_leading(" \t");
-	//	sBuffer.strip_trailing(" \t\n");
-
-	//	// convert the script line into tokens (as in the main AutoIt source)
-	//	Lexer(sBuffer.c_str(), LineTokens);
-
-	//	ivPos = 0;
-	//	while (LineTokens[ivPos].m_nType != TOK_END)
-	//	{
-	//		// Is this a fileinstall function?
-	//		if (LineTokens[ivPos].m_nType == TOK_FUNCTION && (!_stricmp("FileInstall", LineTokens[ivPos].m_Variant.szValue())) )
-	//		{
-	//			if (LineTokens[ivPos+1].m_nType == TOK_LEFTPAREN && LineTokens[ivPos+2].m_nType == TOK_VARIANT)
-	//			{
-	//				sBuffer = LineTokens[ivPos+2].m_Variant.szValue();	// Get first parameter of FileInstall
-	//				break;
-	//			}
-	//			else
-	//			{
-	//				strcpy(szBuffer, "Invalid FileInstall() function:\n\n");
-	//				strcat(szBuffer, sBuffer.c_str());
-	//				Util_ShowError(szBuffer);		
-	//				oWrite.Close();					// Close archive
-	//				fclose(fptr);					// Close script
-	//				StatusbarWrite(IDS_READY);		// Reset statusbar
-	//				return false;
-	//			}
-	//		}
-	//		else
-	//			++ivPos;
-	//	}
-
-	//	// Did we find a FileInstall command?
-	//	if (LineTokens[ivPos].m_nType != TOK_END)
-	//	{
-	//		// Show the user what file we are working on (show the full path in lowercase)
-	//		strcpy(szBuffer, "Compressing and adding: ");
-	//		GetFullPathName(sBuffer.c_str(), _MAX_PATH, szTempFilename, &szFilePart);
-	//		_strlwr(szTempFilename);
-	//		strcat(szBuffer, szTempFilename);
-	//		StatusbarWrite(szBuffer);
-	//		
-	//		// Add the file: (Filename, FileID)
-	//		if ( oWrite.FileAdd(szTempFilename, sBuffer.c_str()) != HS_EXEARC_E_OK )
-	//		{
-	//			strcpy(szBuffer, "Error adding file:\n\n");
-	//			strcat(szBuffer, sBuffer.c_str());
-	//			Util_ShowError(szBuffer);		
-	//			oWrite.Close();					// Close archive
-	//			fclose(fptr);					// Close script
-	//			StatusbarWrite(IDS_READY);		// Reset statusbar
-	//			return false;
-	//		}
-	//	}
-
-	//} // End While
-
-	//// Close the temp script
-	//fclose(fptr);
-
-	// AutoHotkey: Closing is done by the caller instead.
-	// Close the archive
-	//oWrite.Close();
+	if ( oWrite.Save(szDest) != HS_EXEARC_E_OK )
+	{
+		Util_ShowErrorIDS(HS_EXEARC_E_OPENOUTPUT);
+		return false;
+	}
 
 	StatusbarWrite(IDS_READY);					// Reset statusbar
 	

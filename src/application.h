@@ -79,9 +79,9 @@ private:
 	void		SaveSettings(void);
 
 	bool		Convert(char *szSource, char *szDest, char *szIcon, char *szPass, BOOL aAllowDecompile);
-	bool		ScriptRead(const char *szFile, FILE *fScript, HS_EXEArc_Write &oWrite, char *aOutputScriptFilename); // AutoHotkey: added last two params.
+	bool		ScriptRead(const char *szFile, FILE *fScript, EXEArc_Write &oWrite, char *aOutputScriptFilename); // AutoHotkey: added last two params.
 	bool		CompileScript(char *szScript, char *szDest, char *szPass
-					, HS_EXEArc_Write &oWrite, char *aInternalScriptName); // AutoHotkey: added last 2 params.
+					, EXEArc_Write &oWrite, char *aInternalScriptName); // AutoHotkey: added last 2 params.
 
 	bool		ConvertCheckFilenames(const char *szSource, char *szDest);
 

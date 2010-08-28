@@ -16,8 +16,8 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\release"
-			IntermediateDirectory=".\release"
+			OutputDirectory="temp\release"
+			IntermediateDirectory="temp\release"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -55,10 +55,10 @@
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="StdAfx.h"
-				PrecompiledHeaderFile=".\release/Aut2Exe_VC6.pch"
-				AssemblerListingLocation=".\release/"
-				ObjectFile=".\release/"
-				ProgramDataBaseFileName=".\release/"
+				PrecompiledHeaderFile="temp\release\Aut2Exe_VC6.pch"
+				AssemblerListingLocation=""
+				ObjectFile="temp\release\"
+				ProgramDataBaseFileName="temp\release\"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 			/>
@@ -77,10 +77,11 @@
 				Name="VCLinkerTool"
 				AdditionalOptions="/filealign:0x200"
 				AdditionalDependencies="exearc_write_mt.lib odbc32.lib odbccp32.lib comctl32.lib version.lib"
-				OutputFile="bin/Ahk2Exe.exe"
+				OutputFile="release\Ahk2Exe.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="src/lib"
+				GenerateManifest="false"
 				ProgramDatabaseFile=".\release/Aut2Exe.pdb"
 				SubSystem="2"
 				RandomizedBaseAddress="1"
@@ -92,6 +93,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
+				AssemblyIdentity=""
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -107,13 +109,13 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="..\upx --best --compress-icons=0 bin\Ahk2Exe.exe"
+				CommandLine="..\upx --best --compress-icons=0 release\Ahk2Exe.exe"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\debug"
-			IntermediateDirectory=".\debug"
+			OutputDirectory="temp\debug"
+			IntermediateDirectory="temp\debug"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -149,10 +151,10 @@
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderThrough="StdAfx.h"
-				PrecompiledHeaderFile=".\debug/Aut2Exe_VC6.pch"
-				AssemblerListingLocation=".\debug/"
-				ObjectFile=".\debug/"
-				ProgramDataBaseFileName=".\debug/"
+				PrecompiledHeaderFile="temp\debug\Aut2Exe_VC6.pch"
+				AssemblerListingLocation=""
+				ObjectFile="temp\debug\"
+				ProgramDataBaseFileName="temp\debug\"
 				WarningLevel="3"
 				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
@@ -171,10 +173,11 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="exearc_write_mtd.lib odbc32.lib odbccp32.lib comctl32.lib version.lib"
-				OutputFile="bin/Ahk2Exe.exe"
+				OutputFile="debug\Ahk2Exe.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="src/lib"
+				GenerateManifest="false"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\debug/Aut2Exe.pdb"
 				SubSystem="2"
@@ -187,6 +190,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
+				AssemblyIdentity=""
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -293,6 +297,10 @@
 						BasicRuntimeChecks="3"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\src\exearc_write.cpp"
+				>
 			</File>
 			<File
 				RelativePath="src\lexer.cpp"

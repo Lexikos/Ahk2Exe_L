@@ -78,7 +78,12 @@ private:
   int   m_iSize;
 
   PIMAGE_DOS_HEADER m_dosHeader;
-  PIMAGE_NT_HEADERS m_ntHeaders;
+  union
+  {
+	PIMAGE_NT_HEADERS32 m_ntHeaders;
+	PIMAGE_NT_HEADERS64 m_ntHeaders64;
+  };
+  PIMAGE_DATA_DIRECTORY m_dataDirectory;
 
   DWORD m_dwResourceSectionIndex;
   DWORD m_dwResourceSectionVA;

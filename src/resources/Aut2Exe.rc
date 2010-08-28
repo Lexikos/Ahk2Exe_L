@@ -59,7 +59,7 @@ IDI_MAIN                ICON                    "AutoIt_Multi.ico"
 IDD_MAIN DIALOGEX 0, 0, 396, 265
 STYLE DS_SETFONT | DS_3DLOOK | DS_CENTER | WS_MINIMIZEBOX | WS_POPUP | 
     WS_VISIBLE | WS_CAPTION | WS_SYSMENU
-CAPTION "Ahk2Exe v1.0.48.05 -- Script to EXE Converter"
+CAPTION "Ahk2Exe v1.0.48.05.L -- Script to EXE Converter"
 CLASS "Aut2Exe"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
@@ -85,7 +85,7 @@ BEGIN
     EDITTEXT        IDC_PASSVERIFY,92,189,210,14,ES_PASSWORD | 
                     ES_AUTOHSCROLL
     PUSHBUTTON      "Def&ault",IDC_PASSDEFAULT,307,180,35,14
-    LTEXT           "Note: To prevent decompiling, type N/A in both boxes above.",
+    LTEXT           "Note: Password not supported in x64 builds.",
                     IDC_STATIC,17,204,362,10
     DEFPUSHBUTTON   "> &Convert <",ID_CONVERT,172,219,50,17
     CONTROL         "",IDC_STATIC,"Static",SS_BLACKFRAME | SS_SUNKEN,7,72,
@@ -182,6 +182,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "E&xit\tAlt+F4",               ID_EXIT
     END
+#ifdef SHOW_COMPRESSION_MENU
     POPUP "C&ompression"
     BEGIN
         MENUITEM "Lowest",                      ID_COMPRESSION_LOWEST
@@ -190,6 +191,7 @@ BEGIN
         MENUITEM "High",                        ID_COMPRESSION_HIGH
         MENUITEM "Highest",                     ID_COMPRESSION_HIGHEST
     END
+#endif
     POPUP "&Help"
     BEGIN
         MENUITEM "&About\tF1",                  ID_ABOUT
@@ -280,7 +282,7 @@ BEGIN
     IDS_E_REGISTERCLASS     "Error:  Unable to register the application class."
     IDS_E_CREATETOOLS       "Error:  Unable to create tool/status bars."
     IDS_E_NOFILES           "Error: Source file not specified."
-    IDS_E_READSCBIN         "Error: Unable to read in AutoIt binary file. (AutoHotkeySC.bin)."
+    IDS_E_COPYSCBIN         "Error: Unable to copy AutoHotkeySC binary file to destination."
     IDS_E_READSOURCE        "Error: Error opening the source file."
     IDS_E_WRITEDEST         "Error: Error opening the destination file."
 END

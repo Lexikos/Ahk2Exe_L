@@ -55,7 +55,7 @@
 #define IDS_E_CREATETOOLS               41002
 #define ID_RESTORE                      41003
 #define IDS_E_NOFILES                   41003
-#define IDS_E_READSCBIN                 41004
+#define IDS_E_COPYSCBIN                 41004
 #define IDS_E_READSOURCE                41005
 #define IDS_E_WRITEDEST                 41006
 #define IDS_E_READICON                  41007
@@ -82,3 +82,6 @@
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
+
+
+//#define SHOW_COMPRESSION_MENU

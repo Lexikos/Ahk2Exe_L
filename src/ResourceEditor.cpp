@@ -87,8 +87,13 @@ bool CResourceEditor::Init(BYTE* pbPE, int iSize) {
   if (m_ntHeaders->OptionalHeader.CheckSum)
     return false; //throw runtime_error("CResourceEditor doesn't yet support check sum");
 
+  if (m_ntHeaders->FileHeader.Machine == IMAGE_FILE_MACHINE_I386)
+	  m_dataDirectory = m_ntHeaders->OptionalHeader.DataDirectory;
+  else
+	  m_dataDirectory = m_ntHeaders64->OptionalHeader.DataDirectory;
+
   // Get resource section virtual address
-  m_dwResourceSectionVA = m_ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
+  m_dwResourceSectionVA = m_dataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress;
   // Pointer to the sections headers array
   PIMAGE_SECTION_HEADER sectionHeadersArray = IMAGE_FIRST_SECTION(m_ntHeaders);
 
@@ -258,6 +263,16 @@ BYTE* CResourceEditor::Save(DWORD &dwSize) {
 
   // Get new nt headers pointer
   PIMAGE_NT_HEADERS ntHeaders = PIMAGE_NT_HEADERS(pbNewPE + PIMAGE_DOS_HEADER(pbNewPE)->e_lfanew);
+  PIMAGE_DATA_DIRECTORY dataDirectory;
+  DWORD numberOfRvaAndSizes;
+  if (ntHeaders->FileHeader.Machine == IMAGE_FILE_MACHINE_I386) {
+    dataDirectory = ntHeaders->OptionalHeader.DataDirectory;
+	numberOfRvaAndSizes = ntHeaders->OptionalHeader.NumberOfRvaAndSizes;
+  } else {
+    dataDirectory = PIMAGE_NT_HEADERS64(ntHeaders)->OptionalHeader.DataDirectory;
+	numberOfRvaAndSizes = PIMAGE_NT_HEADERS64(ntHeaders)->OptionalHeader.NumberOfRvaAndSizes;
+  }
+
   // Get a pointer to the new section headers
   PIMAGE_SECTION_HEADER sectionHeadersArray = IMAGE_FIRST_SECTION(ntHeaders);
 
@@ -271,7 +286,7 @@ BYTE* CResourceEditor::Save(DWORD &dwSize) {
   sectionHeadersArray[m_dwResourceSectionIndex].SizeOfRawData = dwRsrcSizeAligned;
   // Set the virtual size as well (in memory)
   sectionHeadersArray[m_dwResourceSectionIndex].Misc.VirtualSize = RALIGN(dwRsrcSize, ntHeaders->OptionalHeader.SectionAlignment);
-  ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = sectionHeadersArray[m_dwResourceSectionIndex].Misc.VirtualSize;
+  dataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].Size = sectionHeadersArray[m_dwResourceSectionIndex].Misc.VirtualSize;
 
   // Set the new virtual size of the image
   DWORD old = ntHeaders->OptionalHeader.SizeOfImage;
@@ -288,8 +303,9 @@ BYTE* CResourceEditor::Save(DWORD &dwSize) {
     ntHeaders->OptionalHeader.BaseOfCode += sectionHeadersArray[m_dwResourceSectionIndex].Misc.VirtualSize - dwOldVirtualSize;
 
   // Set the new BaseOfData if needed
-  if (ntHeaders->OptionalHeader.BaseOfData > sectionHeadersArray[m_dwResourceSectionIndex].VirtualAddress)
-    ntHeaders->OptionalHeader.BaseOfData += sectionHeadersArray[m_dwResourceSectionIndex].Misc.VirtualSize - dwOldVirtualSize;
+  if ( ntHeaders->FileHeader.Machine == IMAGE_FILE_MACHINE_I386 // Not relevant on x64; overlaps with ImageBase.
+    && ntHeaders->OptionalHeader.BaseOfData > sectionHeadersArray[m_dwResourceSectionIndex].VirtualAddress )
+      ntHeaders->OptionalHeader.BaseOfData += sectionHeadersArray[m_dwResourceSectionIndex].Misc.VirtualSize - dwOldVirtualSize;
 
   // Refresh the headers of the sections that come after the resource section, and the data directory
   for (i = m_dwResourceSectionIndex + 1; i < ntHeaders->FileHeader.NumberOfSections; i++) {
@@ -300,8 +316,8 @@ BYTE* CResourceEditor::Save(DWORD &dwSize) {
 
     // We must find the right data directory entry before we change the virtual address
     unsigned int uDataDirIdx = 0;
-    for (unsigned int j = 0; j < ntHeaders->OptionalHeader.NumberOfRvaAndSizes; j++)
-      if (ntHeaders->OptionalHeader.DataDirectory[j].VirtualAddress == sectionHeadersArray[i].VirtualAddress)
+    for (unsigned int j = 0; j < numberOfRvaAndSizes; j++)
+      if (dataDirectory[j].VirtualAddress == sectionHeadersArray[i].VirtualAddress)
         uDataDirIdx = j;
 
     sectionHeadersArray[i].VirtualAddress -= RALIGN(dwOldVirtualSize, ntHeaders->OptionalHeader.SectionAlignment);
@@ -309,7 +325,7 @@ BYTE* CResourceEditor::Save(DWORD &dwSize) {
 
     // Change the virtual address in the data directory too
     if (uDataDirIdx)
-      ntHeaders->OptionalHeader.DataDirectory[uDataDirIdx].VirtualAddress = sectionHeadersArray[i].VirtualAddress;
+      dataDirectory[uDataDirIdx].VirtualAddress = sectionHeadersArray[i].VirtualAddress;
   }
 
   // Write the resource section
@@ -361,7 +377,7 @@ bool CResourceEditor::AddExtraVirtualSize2PESection(const char* pszSectionName, 
         if ( m_dwResourceSectionIndex == k )
         {
           // fix the resources virtual address if it changed
-          m_dwResourceSectionVA = m_ntHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress = sectionHeadersArray[k].VirtualAddress;
+          m_dwResourceSectionVA = m_dataDirectory[IMAGE_DIRECTORY_ENTRY_RESOURCE].VirtualAddress = sectionHeadersArray[k].VirtualAddress;
         }
       }
 
