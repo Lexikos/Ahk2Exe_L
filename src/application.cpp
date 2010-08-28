@@ -142,7 +142,10 @@ BOOL App::Create(int nCmdShow)
 #ifdef SHOW_COMPRESSION_MENU
 	CheckMenuItem(GetMenu(g_hWnd), ID_COMPRESSION_LOWEST + m_dwLastCompression, MF_CHECKED);
 #endif
-
+	WORD machine = Util_GetFileMachine(m_szAutoItSC);
+	if (machine && machine != IMAGE_FILE_MACHINE_I386)
+		for (int i = IDC_PASSEDIT; i <= IDC_PASSLABEL2; ++i)
+			EnableWindow(GetDlgItem(g_hWnd, i), FALSE);
 
 
 	// Process the message loop
@@ -721,7 +724,6 @@ bool App::ConvertCheckFilenames(const char *szSource, char *szDest)
 
 bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass, BOOL aAllowDecompile) // BOOL vs. bool avoids compiler's performance warning in some callers.
 {
-	FILE	*fdest;
 	char	szScriptTemp[_MAX_PATH+1];
 	char	szTempPath[_MAX_PATH+1];
 	FILE	*fScript;
@@ -789,22 +791,12 @@ bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass, BOOL
 	// later so that the script and FileInstalls are compressed, giving them some measure
 	// of protection depending on the packer.
 	//
-	// Consider packing non-critical: if something below fails, just continue.
+	// Consider packing non-critical: if Util_GetFileMachine fails, just continue.
 	// (However, those instances will probably fail at a later stage anyway.)
 	bool packNow = false, packLater = false;
-	if (fdest = fopen(szDest, "rb"))
-	{
-		IMAGE_DOS_HEADER dosHeader;
-		IMAGE_NT_HEADERS ntHeaders;
-		if (   fread(&dosHeader, sizeof(dosHeader), 1, fdest) == 1	 )
-		if (   fseek(fdest, dosHeader.e_lfanew, SEEK_SET)	  == 0	 )
-		if (   fread(&ntHeaders, sizeof(ntHeaders), 1, fdest) == 1	 )
-		{
-			packNow = (ntHeaders.FileHeader.Machine == IMAGE_FILE_MACHINE_I386);
-			packLater = !packNow;
-		}
-		fclose(fdest);
-	}
+	WORD machine;
+	if (machine = Util_GetFileMachine(szDest))
+		packLater = !(packNow = (machine == IMAGE_FILE_MACHINE_I386));
 
 
 	// Build the packer command line, used here or at the end of this function.

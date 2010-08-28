@@ -29,6 +29,7 @@ void	Util_ShowInfoIDS(unsigned int iErr);
 void	Util_GetFullPath(char *szInput);
 int		Util_Run(const char *szCmd, const char *szDir, int nShow, bool bWait);
 bool	Util_GetFileVersion(char *szFile, char *szVersion);
+WORD	Util_GetFileMachine(const char *szFile);
 
 ///////////////////////////////////////////////////////////////////////////////
 

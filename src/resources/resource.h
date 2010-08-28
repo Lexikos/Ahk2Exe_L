@@ -37,7 +37,8 @@
 #define IDC_PASSEDIT                    1027
 #define IDC_PASSVERIFY                  1028
 #define IDC_PASSDEFAULT                 1029
-#define IDC_CHECK1                      1030
+#define IDC_PASSLABEL1                  1030
+#define IDC_PASSLABEL2                  1031
 #define ID_CONVERT                      40001
 #define IDS_MENU_CONVERT                40001
 #define IDS_TOOLTIP_CONVERT             40002

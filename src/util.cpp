@@ -207,3 +207,26 @@ bool Util_GetFileVersion(char *szFile, char *szVersion)
 		return false;
 
 } // Util_GetFileVersion
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Util_GetFileMachine()
+///////////////////////////////////////////////////////////////////////////////
+WORD Util_GetFileMachine(const char *szFile)
+{
+	FILE *fp;
+	if (fp = fopen(szFile, "rb"))
+	{
+		IMAGE_DOS_HEADER dosHeader;
+		IMAGE_NT_HEADERS ntHeaders;
+		if (   fread(&dosHeader, sizeof(dosHeader), 1, fp)	== 1   )
+		if (   fseek(fp, dosHeader.e_lfanew, SEEK_SET)		== 0   )
+		if (   fread(&ntHeaders, sizeof(ntHeaders), 1, fp)	== 1   )
+		{
+			fclose(fp);
+			return ntHeaders.FileHeader.Machine;
+		}
+		fclose(fp);
+	}
+	return 0; // FAIL
+}

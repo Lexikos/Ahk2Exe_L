@@ -79,13 +79,13 @@ BEGIN
     EDITTEXT        IDC_ICONEDIT,92,148,210,14,ES_AUTOHSCROLL | WS_DISABLED
     PUSHBUTTON      "Br&owse",IDC_ICONFILE,307,148,35,14
     PUSHBUTTON      "D&efault",IDC_ICONDEFAULT,346,148,35,14
-    LTEXT           "&Passphrase",IDC_STATIC,12,176,38,8
+    LTEXT           "&Passphrase",IDC_PASSLABEL1,12,176,38,8
     EDITTEXT        IDC_PASSEDIT,92,173,210,14,ES_PASSWORD | ES_AUTOHSCROLL
-    LTEXT           "&Verify passphrase",IDC_STATIC,12,191,76,8
+    LTEXT           "&Verify passphrase",IDC_PASSLABEL2,12,191,76,8
     EDITTEXT        IDC_PASSVERIFY,92,189,210,14,ES_PASSWORD | 
                     ES_AUTOHSCROLL
     PUSHBUTTON      "Def&ault",IDC_PASSDEFAULT,307,180,35,14
-    LTEXT           "Note: Password not supported in x64 builds.",
+    LTEXT           "Note: Passphrase protection is not available in x64 builds.",
                     IDC_STATIC,17,204,362,10
     DEFPUSHBUTTON   "> &Convert <",ID_CONVERT,172,219,50,17
     CONTROL         "",IDC_STATIC,"Static",SS_BLACKFRAME | SS_SUNKEN,7,72,
