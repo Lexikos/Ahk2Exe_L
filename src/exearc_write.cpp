@@ -82,7 +82,6 @@ int EXEArc_Write::FileAdd(const char *szFileName, const char *szFileID)
 			return HS_EXEARC_E_OPENINPUT;
 		strcpy(szTempFileID, szFileID);
 		_strupr(szTempFileID);
-		strcat(szTempFileID, "_"); // Workaround: Something cuts off the last character.
 
 		FILE *fp;
 		if ( !(fp = fopen(szFileName, "rb")) )

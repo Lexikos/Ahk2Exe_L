@@ -517,7 +517,10 @@ void CResourceEditor::WriteRsrcSec(BYTE* pbRsrcSec) {
     WORD iLen = lstrlen(szName);
     WCHAR* szwName = new WCHAR[iLen+1];
     // MultiByteToWideChar return value includes the null char, so -1
-    iLen = MultiByteToWideChar(CP_ACP, 0, szName, iLen, szwName, iLen) - 1;
+	// Update by Lexikos: "If the provided size does not include a terminating null character,
+	// the resulting Unicode string is not null-terminated, and the returned length does not
+	// include this character." Therefore, NO -1 unless we want to truncate resource names...
+    iLen = MultiByteToWideChar(CP_ACP, 0, szName, iLen, szwName, iLen);
     *(WORD*)seeker = iLen;
     seeker += sizeof(WORD);
     CopyMemory(seeker, szwName, iLen*sizeof(WCHAR));
