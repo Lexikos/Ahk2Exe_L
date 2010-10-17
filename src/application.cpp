@@ -384,7 +384,7 @@ void App::Command(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			if ( !strcmp(szPass, szPassVerify) )
 			{
 				// Run conversion
-				if ( Convert(szSource, szDest, szIcon, szPass, _stricmp(szPass, "N/A")) == true )
+				if ( Convert(szSource, szDest, szIcon, szPass) == true )
 					Util_ShowInfoIDS(IDS_CONVERTCOMPLETE);
 			}
 			else
@@ -641,7 +641,6 @@ bool App::CmdLineMode(void)
 		}
 	}
 
-	bool allow_decompile = true; // Set default.
 	for (i=0; i<4; i++)		// Allow up to 4 distinct command-line switches.
 	{
 		// Check next param (/out or /icon or /pass)
@@ -654,8 +653,6 @@ bool App::CmdLineMode(void)
 			g_oCmdLine.GetNextParam(szPass);
 		else if ( !_stricmp(szTemp, "/bin") )
 			g_oCmdLine.GetNextParam(m_szAutoItSC);
-		else if ( !_stricmp(szTemp, "/NoDecompile") )
-			allow_decompile = false; // Override the default set earlier.
 		else if ( szTemp[0] != '\0' )	// not /out /icon /pass or blank - error
 		{
 			Util_ShowInfoIDS(IDS_CMDLINEPARAMS);
@@ -676,7 +673,7 @@ bool App::CmdLineMode(void)
 
 
 	// OK, run the conversion
-	if (Convert(szIn, szOut, szIcon, szPass, allow_decompile)) // v1.0.42.08: To support compiling from inside editors such as PSPad (by Toralf).
+	if (Convert(szIn, szOut, szIcon, szPass)) // v1.0.42.08: To support compiling from inside editors such as PSPad (by Toralf).
 		printf("Successfully compiled: %s\n", szOut);
 	else
 		printf("Failed to compile: %s\n", szOut);
@@ -722,7 +719,7 @@ bool App::ConvertCheckFilenames(const char *szSource, char *szDest)
 // True = success
 ///////////////////////////////////////////////////////////////////////////////
 
-bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass, BOOL aAllowDecompile) // BOOL vs. bool avoids compiler's performance warning in some callers.
+bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass)
 {
 	char	szScriptTemp[_MAX_PATH+1];
 	char	szTempPath[_MAX_PATH+1];
