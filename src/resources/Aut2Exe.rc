@@ -292,7 +292,7 @@ BEGIN
     IDS_E_ICONFORMAT        "Error changing icon: Unable to read icon or icon was of the wrong format."
     IDS_E_PARSESCBIN        "Error changing icon: Unable to parse AutoIt binary file."
     IDS_CONVERTCOMPLETE     "Conversion complete."
-    IDS_CMDLINEPARAMS       "Command Line Parameters:\n\nAhk2Exe.exe /in infile.ahk [/out outfile.exe] [/icon iconfile.ico] [/pass password]"
+    IDS_CMDLINEPARAMS       "Command Line Parameters:\n\nAhk2Exe.exe /in infile.ahk [/out outfile.exe] [/icon iconfile.ico] [/pass password] [/bin AutoHotkeySC.bin]"
     IDS_E_PASSVERIFY        "Error: The two passphrases you entered do not match."
     IDS_E_TEMPFILE          "Error: Unable to create temporary files."
     IDS_E_SCRIPTREAD        "Error: An error was encountered while trying to read in the script file and/or include files."
