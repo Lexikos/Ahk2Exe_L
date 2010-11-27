@@ -221,12 +221,11 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileDescription", "Ahk2Exe"
+            VALUE "FileDescription", "Compiler for AutoHotkey_L scripts"
             VALUE "FileVersion", "1, 0, 48, 05"
-            VALUE "InternalName", "Ahk2Exe"
-            VALUE "LegalCopyright", "Copyright (C) 2009"
-            VALUE "OriginalFilename", "Aut2Exe.rc"
-            VALUE "ProductName", " Ahk2Exe"
+            VALUE "InternalName", "Ahk2Exe_L"
+            VALUE "LegalCopyright", "Copyright (C) 2010"
+            VALUE "ProductName", " Ahk2Exe_L"
             VALUE "ProductVersion", "1, 0, 48, 05"
         END
     END

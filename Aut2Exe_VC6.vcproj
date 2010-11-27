@@ -174,7 +174,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="exearc_write_mtd.lib odbc32.lib odbccp32.lib comctl32.lib version.lib"
 				OutputFile="debug\Ahk2Exe.exe"
-				LinkIncremental="1"
+				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="src/lib"
 				GenerateManifest="false"
@@ -331,20 +331,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="src\ResourceEditor.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						PreprocessorDefinitions=""
-						BasicRuntimeChecks="3"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="src\scriptfile.cpp"
 				>
 				<FileConfiguration
@@ -440,15 +426,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\lib\exearc_write.h"
+				>
+			</File>
+			<File
 				RelativePath="src\globaldata.h"
 				>
 			</File>
 			<File
 				RelativePath=".\src\resources\resource.h"
-				>
-			</File>
-			<File
-				RelativePath="src\ResourceEditor.h"
 				>
 			</File>
 			<File

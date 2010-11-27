@@ -8,64 +8,42 @@
 
 int EXEArc_Write::Open(const char *szEXEArcFile, const char *szPwd, UINT nCompressionLevel)
 {
-	// Based partly on ChangeResources().
-	BYTE		*pbuf;
 	FILE		*farc;
-	struct stat	ST;
 
 	if ( !(farc = fopen(szEXEArcFile, "rb")) )
 		return HS_EXEARC_E_OPENEXE;
 
-	fstat(_fileno(farc), &ST);
-	if (ST.st_size == 0)
+	IMAGE_DOS_HEADER dosHeader;
+	IMAGE_NT_HEADERS ntHeaders;
+	if (fread(&dosHeader, sizeof(dosHeader), 1, farc) != 1
+		|| fseek(farc, dosHeader.e_lfanew, SEEK_SET) != 0
+		|| fread(&ntHeaders, sizeof(ntHeaders), 1, farc) != 1)
 	{
 		fclose(farc);
 		return HS_EXEARC_E_NOTARC;
 	}
-
-	// Allocate enough memory to hold this file
-	if ( !(pbuf = new BYTE[ST.st_size]) )
-	{
-		fclose(farc);
-		return HS_EXEARC_E_MEMALLOC;
-	}
-
-	fread(pbuf, 1, ST.st_size, farc);
 	fclose(farc);
-
-	PIMAGE_DOS_HEADER dosHeader = (PIMAGE_DOS_HEADER)pbuf;
-	PIMAGE_NT_HEADERS ntHeaders = (PIMAGE_NT_HEADERS)(pbuf + dosHeader->e_lfanew);
 	
-	if (ntHeaders->FileHeader.Machine == IMAGE_FILE_MACHINE_I386)
+	if (ntHeaders.FileHeader.Machine == IMAGE_FILE_MACHINE_I386)
 	{
 		// Safe to use HS_EXEArc_Write on this binary.
 		if (m_arc = new HS_EXEArc_Write)
 		{
-			delete [] pbuf; // No longer needed.
 			return m_arc->Open(szEXEArcFile, szPwd, nCompressionLevel);
 		}
+		return HS_EXEARC_E_MEMALLOC;
 	}
 	else
 	{
-		CResourceEditor *pres;
+		HANDLE res;
 		// Store script as a resource on x64 since ExeArc is 32-bit.
-		if (pres = new CResourceEditor)
+		if (res = BeginUpdateResource(szEXEArcFile, FALSE))
 		{
-			// Init our resource editor with a pointer to our data.
-			if (pres->Init(pbuf, ST.st_size))
-			{
-				m_res = pres;
-				m_buf = pbuf;
-				return HS_EXEARC_E_OK;
-			}
-			delete pres;
-			delete [] pbuf;
-			return HS_EXEARC_E_NOTARC;
+			m_res = res;
+			return HS_EXEARC_E_OK;
 		}
+		return HS_EXEARC_E_OPENEXE;
 	}
-
-	delete [] pbuf;
-	return HS_EXEARC_E_MEMALLOC;
 }
 
 
@@ -99,7 +77,7 @@ int EXEArc_Write::FileAdd(const char *szFileName, const char *szFileID)
 		{
 			if (file_size == fread(file_data, 1, file_size, fp))
 			{
-				success = m_res->UpdateResource(RT_RCDATA, szTempFileID, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), file_data, file_size);
+				success = (UpdateResource(m_res, RT_RCDATA, szTempFileID, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), file_data, file_size) == TRUE);
 			}
 			delete [] file_data;
 		}
@@ -112,33 +90,14 @@ int EXEArc_Write::FileAdd(const char *szFileName, const char *szFileID)
 }
 
 
-int EXEArc_Write::Save(const char *szEXEArcFile)
-{
-	if (m_res)
-	{
-		FILE *fp;
-		BYTE *data;
-		DWORD size;
-		size_t written = 0;
-
-		data = m_res->Save(size);
-		delete [] m_buf;
-		m_buf = data;
-		if (fp = fopen(szEXEArcFile, "wb"))
-		{
-			written = fwrite(data, 1, size, fp);
-			fclose(fp);
-		}
-
-		if (written != size)
-			return HS_EXEARC_E_OPENOUTPUT;
-	}
-	return HS_EXEARC_E_OK;
-}
-
 
 void EXEArc_Write::Close()
 {
+	if (m_res)
+	{
+		EndUpdateResource(m_res, FALSE);
+		m_res = NULL;
+	}
 	if (m_arc)
 		m_arc->Close();
 }
@@ -148,7 +107,5 @@ void EXEArc_Write::Close()
 EXEArc_Write::~EXEArc_Write()
 {
 	if (m_res)
-		delete m_res;
-	if (m_buf)
-		delete [] m_buf;
+		EndUpdateResource(m_res, TRUE);
 }

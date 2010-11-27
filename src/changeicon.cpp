@@ -34,7 +34,6 @@
 
 #include "Aut2Exe.h"
 #include "changeicon.h"
-#include "ResourceEditor.h"
 
 
 // Icon editing structures
@@ -202,7 +201,7 @@ bool Icon_list(const char *exename, WORD wIconId)
 }
 
 
-bool Icon_DoReplace(CResourceEditor* re, WORD wIconId, const char* szIcon, const char *szExe)
+bool Icon_DoReplace(HANDLE re, WORD wIconId, const char* szIcon, const char *szExe)
 {
 	// Populates our array with the number of images in our requested icon and sets up the 
 	// array of icon ids that we should use when replacing
@@ -233,7 +232,7 @@ bool Icon_DoReplace(CResourceEditor* re, WORD wIconId, const char* szIcon, const
 	for (i=0; i<g_Icon_NumImages; i++)
 		// AutoHotkey: Replaced SUBLANG_ENGLISH_UK with SUBLANG_ENGLISH_US so that icon replacement works
 		// with the target EXE's language:
-		re->UpdateResource(RT_ICON, MAKEINTRESOURCE(g_Icon_IDs[i]), MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), 0, 0);
+		UpdateResource(re, RT_ICON, MAKEINTRESOURCE(g_Icon_IDs[i]), MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), NULL, 0);
 
 
 	// Now replace the images
@@ -262,7 +261,7 @@ bool Icon_DoReplace(CResourceEditor* re, WORD wIconId, const char* szIcon, const
 		fread(iconData, sizeof(BYTE), ige->dwRawSize, f);
 		// AutoHotkey: Replaced SUBLANG_ENGLISH_UK with SUBLANG_ENGLISH_US so that icon replacement works
 		// with the target EXE's language:
-		re->UpdateResource(RT_ICON, MAKEINTRESOURCE(g_Icon_IDs[i]), MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), iconData, ige->dwRawSize);
+		UpdateResource(re, RT_ICON, MAKEINTRESOURCE(g_Icon_IDs[i]), MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), iconData, ige->dwRawSize);
 		free(iconData);
 
 		fsetpos(f, &pos);
@@ -281,7 +280,7 @@ bool Icon_DoReplace(CResourceEditor* re, WORD wIconId, const char* szIcon, const
 	// Write the icon group
 	// AutoHotkey: Replaced SUBLANG_ENGLISH_UK with SUBLANG_ENGLISH_US so that icon replacement works
 	// with the target EXE's language:
-	re->UpdateResource(RT_GROUP_ICON, MAKEINTRESOURCE(wIconId), MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), rsrcIconGroup, sizeof(IconGroupHeader) + igh.wCount*SIZEOF_RSRC_ICON_GROUP_ENTRY);
+	UpdateResource(re, RT_GROUP_ICON, MAKEINTRESOURCE(wIconId), MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), rsrcIconGroup, sizeof(IconGroupHeader) + igh.wCount*SIZEOF_RSRC_ICON_GROUP_ENTRY);
 
 	free(rsrcIconGroup);
 

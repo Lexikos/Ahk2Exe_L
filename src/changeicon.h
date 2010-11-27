@@ -23,9 +23,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 
-#include "ResourceEditor.h"
-
-bool Icon_DoReplace(CResourceEditor* re, WORD wIconId, const char* szIcon, const char *szExe);
+bool Icon_DoReplace(HANDLE re, WORD wIconId, const char* szIcon, const char *szExe);
 
 ///////////////////////////////////////////////////////////////////////////////
 

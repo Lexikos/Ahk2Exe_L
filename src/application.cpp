@@ -758,15 +758,36 @@ bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass)
 	// Now, change the resources as required (icons, versioninfo)
 	if (*szIcon) // AutoHotkey: version info isn't changed, so skip this step if no icon was specified.
 	{
-		if (ChangeResources(szDest, szIcon) == false)
+		HANDLE re;
+
+		// Open exe file for updating resources
+		re = BeginUpdateResource(szDest, FALSE);
+		if ( re == NULL )
+		{
+			Util_ShowErrorIDS(IDS_E_WRITEDEST);
+			return false;
+		}
+
+		// Change the icon if a user one is specified
+		if ( Icon_DoReplace(re, AUT_ICONID, szIcon, szDest) != true )
+		{
+			EndUpdateResource(re, TRUE);
+			Util_ShowErrorIDS(IDS_E_ICONFORMAT);
+			return false;
+		}
+
+		// Write out our modified exe
+		if ( EndUpdateResource(re, FALSE) == FALSE )
 		{
 			SetCursor(LoadCursor(NULL, IDC_ARROW));	// Reset cursor
 			DeleteFile(szDest);						// The output is trashed -- delete it.
+			Util_ShowErrorIDS(IDS_E_WRITEDEST);
 			return false;
 		}
 	}
 
-
+	
+	// SOME OF THE FOLLOWING COMMENT IS OBSOLETE:
 	// Currently some work is repeated:
 	//
 	//	1) ChangeResources() and oWrite.Open() both use their own CResourceEditor. This involves:
@@ -2100,114 +2121,11 @@ bool App::CompileScript(char *szScript, char *szDest, char *szPass, EXEArc_Write
 		//oWrite.Close();
 		return false;
 	}
-	if ( oWrite.Save(szDest) != HS_EXEARC_E_OK )
-	{
-		Util_ShowErrorIDS(HS_EXEARC_E_OPENOUTPUT);
-		return false;
-	}
 
 	StatusbarWrite(IDS_READY);					// Reset statusbar
 	
 	return true;
 
 } // CompileScript()
-
-
-///////////////////////////////////////////////////////////////////////////////
-// ChangeResources()
-// Prepares the output file for resource changes (icons, version, etc)
-///////////////////////////////////////////////////////////////////////////////
-
-bool App::ChangeResources(const char *szDest, const char *szIcon)
-{
-	CResourceEditor *oResEd;
-	BYTE			*pbuf, *pbufnew;
-    FILE			*out;
-	FILE			*in;
-	int				bytesin;
-	struct stat		ST;
-	DWORD			dwNewExeSize;
-
-	in = fopen(szDest, "rb");
-	if (in == NULL)
-	{
-		Util_ShowErrorIDS(IDS_E_WRITEDEST);
-		return false;
-	}
-
-    fstat(_fileno(in), &ST);
-    if (ST.st_size == 0)
-	{
-		Util_ShowErrorIDS(IDS_E_WRITEDEST);
-		return false;
-	}
-
-	// Allocate enough memory to hold this file
-	pbuf = (BYTE *)malloc(ST.st_size);
-	if (pbuf == NULL)
-    {
-		fclose(in);
-		Util_ShowErrorIDS(IDS_E_WRITEDEST);
-		return false;
-	}
-
-	bytesin = ST.st_size;
-    fread(pbuf, 1, ST.st_size, in);
-	fclose(in);
-
-	// Open our resource editor with a pointer to our data
-	oResEd = new CResourceEditor;
-	if (oResEd->Init(pbuf, bytesin) == false)
-	{
-		free(pbuf);
-		delete oResEd;
-		Util_ShowErrorIDS(IDS_E_WRITEDEST);
-		return false;
-	}
-
-
-	// Remove version information
-//	oResEd->UpdateResource(RT_VERSION, 1, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), 0, 0);
-
-
-	// Change the icon if a user one is specified
-	if (szIcon[0] != '\0')
-	{
-		if ( Icon_DoReplace(oResEd, AUT_ICONID, szIcon, szDest) != true)
-		{
-			free (pbuf);
-			delete oResEd;
-			Util_ShowErrorIDS(IDS_E_ICONFORMAT);
-			return false;
-		}
-	}
-
-	// Save the resource (gets a pointer to the new data - note the new data was allocated
-	// with NEW and not MALLOC.
-	pbufnew = oResEd->Save(dwNewExeSize);
-
-	// Don't need the resource editor anymore, or the original data
-	free(pbuf);
-	delete oResEd;
-
-	// Write out our modified data
-    out = fopen(szDest, "wb");
-    if (out == NULL)
-    {
-		delete [] pbufnew;
-		Util_ShowErrorIDS(IDS_E_WRITEDEST);
-		return false;
-    }
-
-	// Write out our modified exe
-    fwrite(pbufnew, 1, dwNewExeSize, out);
-
-    // Clean up
-	fclose(out);
-	delete [] pbufnew;
-
-	return true;
-
-} // ChangeResources()
 
 

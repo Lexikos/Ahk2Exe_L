@@ -87,9 +87,6 @@ private:
 
 	bool		CmdLineMode(void);
 
-	// Resource funcs
-	bool		ChangeResources(const char *szDest, const char *szIcon);
-
 
 	// Lexer functions (lexer.cpp)
 	void		Lexer(const char *szLine, VectorToken &vLineToks);	// Convert a string into tokens
