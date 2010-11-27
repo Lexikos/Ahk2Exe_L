@@ -110,6 +110,7 @@
 			<Tool
 				Name="VCPostBuildEventTool"
 				CommandLine="..\upx --best --compress-icons=0 release\Ahk2Exe.exe"
+				ExcludedFromBuild="true"
 			/>
 		</Configuration>
 		<Configuration

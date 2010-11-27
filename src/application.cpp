@@ -42,6 +42,7 @@
 #include "vector_token_datatype.h"
 #include "changeicon.h"
 #include "scriptfile.h"
+#include <Shlobj.h> // for SHGetFolderPath
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -670,7 +671,6 @@ bool App::CmdLineMode(void)
 	// Now using %l instead of %1 to force ShellCommands to pass a LFN
 	//GetLongPathName(szIn, szIn, _MAX_PATH);
 	//GetLongPathName(szOut, szOut, _MAX_PATH);
-
 
 	// OK, run the conversion
 	if (Convert(szIn, szOut, szIcon, szPass)) // v1.0.42.08: To support compiling from inside editors such as PSPad (by Toralf).
@@ -1377,6 +1377,169 @@ void SetWorkingDir(char *aNewDir)
 
 
 
+//
+// CODE BASED ON AUTOHOTKEY
+//
+
+#define MAX_VAR_NAME_LENGTH (UCHAR_MAX - 2)
+
+struct FuncLibrary
+{
+	LPSTR path;
+	DWORD_PTR length;
+};
+
+LPSTR FindFuncInLibrary(LPSTR aFuncName, size_t aFuncNameLength)
+// Caller must ensure that aFuncName doesn't already exist as a defined function.
+// If aFuncNameLength is 0, the entire length of aFuncName is used.
+{
+	int i;
+	LPSTR last_backslash, terminate_here;
+	DWORD attr;
+
+	#define FUNC_LIB_EXT ".ahk"
+	#define FUNC_LIB_EXT_LENGTH (_countof(FUNC_LIB_EXT) - 1)
+	#define FUNC_LOCAL_LIB "\\Lib\\" // Needs leading and trailing backslash.
+	#define FUNC_LOCAL_LIB_LENGTH (_countof(FUNC_LOCAL_LIB) - 1)
+	#define FUNC_USER_LIB "\\AutoHotkey\\Lib\\" // Needs leading and trailing backslash.
+	#define FUNC_USER_LIB_LENGTH (_countof(FUNC_USER_LIB) - 1)
+	#define FUNC_STD_LIB "Lib\\" // Needs trailing but not leading backslash.
+	#define FUNC_STD_LIB_LENGTH (_countof(FUNC_STD_LIB) - 1)
+
+	#define FUNC_LIB_COUNT 3
+	static FuncLibrary sLib[FUNC_LIB_COUNT] = {0};
+
+	if (!sLib[0].path) // Allocate & discover paths only upon first use because many scripts won't use anything from the library. This saves a bit of memory and performance.
+	{
+		for (i = 0; i < FUNC_LIB_COUNT; ++i)
+			if (   !(sLib[i].path = (LPSTR) malloc(MAX_PATH))   ) // Need MAX_PATH for to allow room for appending each candidate file/function name.
+				return NULL; // Due to rarity, simply pass the failure back to caller.
+
+		FuncLibrary *this_lib;
+
+		// DETERMINE PATH TO "LOCAL" LIBRARY:
+		this_lib = sLib; // For convenience and maintainability.
+		this_lib->length = strlen(g_ScriptDir);
+		if (this_lib->length < MAX_PATH-FUNC_LOCAL_LIB_LENGTH)
+		{
+			strcpy(this_lib->path, g_ScriptDir);
+			strcpy(this_lib->path + this_lib->length, FUNC_LOCAL_LIB);
+			this_lib->length += FUNC_LOCAL_LIB_LENGTH;
+		}
+		else // Insufficient room to build the path name.
+		{
+			*this_lib->path = '\0'; // Mark this library as disabled.
+			this_lib->length = 0;   //
+		}
+
+		// DETERMINE PATH TO "USER" LIBRARY:
+		this_lib++; // For convenience and maintainability.
+		if ( SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_CURRENT, this_lib->path) == S_OK
+			&& (this_lib->length = strlen(this_lib->path)) < MAX_PATH-FUNC_USER_LIB_LENGTH )
+		{
+			strcpy(this_lib->path + this_lib->length, FUNC_USER_LIB);
+			this_lib->length += FUNC_USER_LIB_LENGTH;
+		}
+		else // Insufficient room to build the path name.
+		{
+			*this_lib->path = '\0'; // Mark this library as disabled.
+			this_lib->length = 0;   //
+		}
+
+		// DETERMINE PATH TO "STANDARD" LIBRARY:
+		this_lib++; // For convenience and maintainability.
+		GetModuleFileName(NULL, this_lib->path, MAX_PATH); // The full path to the currently-running AutoHotkey.exe.
+		last_backslash = strrchr(this_lib->path, '\\'); // Should always be found, so failure isn't checked.
+		*last_backslash = '\0';
+		if ( (last_backslash = strrchr(this_lib->path, '\\'))
+			&& (this_lib->length = last_backslash + 1 - this_lib->path) < MAX_PATH-FUNC_STD_LIB_LENGTH )
+		{
+			strcpy(this_lib->path + this_lib->length, FUNC_STD_LIB);
+			this_lib->length += FUNC_STD_LIB_LENGTH;
+		}
+		else // Insufficient room to build the path name.
+		{
+			*this_lib->path = '\0'; // Mark this library as disabled.
+			this_lib->length = 0;   //
+		}
+
+		for (i = 0; i < FUNC_LIB_COUNT; ++i)
+		{
+			attr = GetFileAttributes(sLib[i].path); // Seems to accept directories that have a trailing backslash, which is good because it simplifies the code.
+			if (attr == 0xFFFFFFFF || !(attr & FILE_ATTRIBUTE_DIRECTORY)) // Directory doesn't exist or it's a file vs. directory. Relies on short-circuit boolean order.
+			{
+				*sLib[i].path = '\0'; // Mark this library as disabled.
+				sLib[i].length = 0;   //
+			}
+		}
+	}
+	// Above must ensure that all sLib[].path elements are non-NULL (but they can be "" to indicate "no library").
+
+	if (!aFuncNameLength) // Caller didn't specify, so use the entire string.
+		aFuncNameLength = strlen(aFuncName);
+
+	CHAR *dest, *first_underscore, class_name_buf[MAX_VAR_NAME_LENGTH + 1];
+	LPTSTR naked_filename = aFuncName;               // Set up for the first iteration.
+	size_t naked_filename_length = aFuncNameLength; //
+
+	for (int second_iteration = 0; second_iteration < 2; ++second_iteration)
+	{
+		for (i = 0; i < FUNC_LIB_COUNT; ++i)
+		{
+			if (!*sLib[i].path) // Library is marked disabled, so skip it.
+				continue;
+
+			if (sLib[i].length + naked_filename_length >= MAX_PATH-FUNC_LIB_EXT_LENGTH)
+				continue; // Path too long to match in this library, but try others.
+			dest = (LPSTR) memcpy(sLib[i].path + sLib[i].length, naked_filename, naked_filename_length); // Append the filename to the library path.
+			strcpy(dest + naked_filename_length, FUNC_LIB_EXT); // Append the file extension.
+
+			attr = GetFileAttributes(sLib[i].path); // Testing confirms that GetFileAttributes() doesn't support wildcards; which is good because we want filenames containing question marks to be "not found" rather than being treated as a match-pattern.
+			if (attr == 0xFFFFFFFF || (attr & FILE_ATTRIBUTE_DIRECTORY)) // File doesn't exist or it's a directory. Relies on short-circuit boolean order.
+				continue;
+
+			// Since above didn't "continue", a file exists whose name matches that of the requested function.
+			// Before loading/including that file, set the working directory to its folder so that if it uses
+			// #Include, it will be able to use more convenient/intuitive relative paths.  This is similar to
+			// the "#Include DirName" feature.
+			// Call SetWorkingDir() vs. SetCurrentDirectory() so that it succeeds even for a root drive like
+			// C: that lacks a backslash (see SetWorkingDir() for details).
+			terminate_here = sLib[i].path + sLib[i].length - 1; // The trailing backslash in the full-path-name to this library.
+			*terminate_here = '\0'; // Temporarily terminate it for use with SetWorkingDir().
+			SetWorkingDir(sLib[i].path); // See similar section in the #Include directive.
+			*terminate_here = '\\'; // Undo the termination.
+
+			return sLib[i].path;
+
+		} // for() each library directory.
+
+		// Now that the first iteration is done, set up for the second one that searches by class/prefix.
+		// Notes about ambiguity and naming collisions:
+		// By the time it gets to the prefix/class search, it's almost given up.  Even if it wrongly finds a
+		// match in a filename that isn't really a class, it seems inconsequential because at worst it will
+		// still not find the function and will then say "call to nonexistent function".  In addition, the
+		// ability to customize which libraries are searched is planned.  This would allow a publicly
+		// distributed script to turn off all libraries except stdlib.
+		if (   !(first_underscore = strchr(aFuncName, '_'))   ) // No second iteration needed.
+			break; // All loops are done because second iteration is the last possible attempt.
+		naked_filename_length = first_underscore - aFuncName;
+		if (naked_filename_length >= _countof(class_name_buf)) // Class name too long (probably impossible currently).
+			break; // All loops are done because second iteration is the last possible attempt.
+		naked_filename = class_name_buf; // Point it to a buffer for use below.
+		memcpy(naked_filename, aFuncName, naked_filename_length);
+		naked_filename[naked_filename_length] = '\0';
+	} // 2-iteration for().
+
+	// Since above didn't return, no match found in any library.
+	return NULL;
+}
+
+//
+// END CODE BASED ON AUTOHOTKEY
+//
+
+
+
 // Prototype to allow mutual recursion:
 ResultType LoadIncludedFile(FILE *aTarget, HWND aStatusBar, EXEArc_Write &oWrite
 	, char *aFileSpec, bool aAllowDuplicateInclude, bool aIgnoreLoadFailure);
@@ -1500,6 +1663,16 @@ inline ResultType IsPreprocessorDirective(FILE *aTarget, HWND aStatusBar, EXEArc
 				++cp;
 		}
 
+		if (cp[0] == '<')
+		{
+			char *cp_end = strchr(cp + 1, '>');
+			if (cp_end && !cp_end[1])
+			{
+				char *lib_file = FindFuncInLibrary(cp + 1, cp_end - (cp + 1));
+				if (lib_file)
+					return (LoadIncludedFile(aTarget, aStatusBar, oWrite, lib_file, include_again, ignore_load_failure) == FAIL) ? FAIL : CONDITION_TRUE;  // It will have already displayed any error.
+			}
+		}
 		// The following section exists in ahk2exe but not the main program because the main program's
 		// GetLine() method resolves escaped semicolon (`;) to be semicolon prior to this stage.  That
 		// same thing can't be done by this one's GetLine() because it would cause the compressed script
