@@ -71,6 +71,7 @@
 #define IDS_E_CREATEARCHIVE             41016
 #define IDS_E_FILEINSTALLSYNTAX         41017
 #define IDS_E_UPXRUN                    41018
+#define IDS_E_NODECOMPILE				41019
 
 // Next default values for new objects
 // 

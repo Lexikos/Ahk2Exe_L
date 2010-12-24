@@ -298,6 +298,7 @@ BEGIN
     IDS_E_CREATEARCHIVE     "Error: Unable to create the compiled archive."
     IDS_E_FILEINSTALLSYNTAX "Error: Invalid ""FileInstall"" syntax found. "
     IDS_E_UPXRUN            "Error: Unable to execute upx.exe to compress stub file."
+	IDS_E_NODECOMPILE		"Error: /NoDecompile is not supported."
 END
 
 #endif    // English (U.K.) resources

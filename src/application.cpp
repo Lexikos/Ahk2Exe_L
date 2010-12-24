@@ -654,6 +654,11 @@ bool App::CmdLineMode(void)
 			g_oCmdLine.GetNextParam(szPass);
 		else if ( !_stricmp(szTemp, "/bin") )
 			g_oCmdLine.GetNextParam(m_szAutoItSC);
+		else if ( !_stricmp(szTemp, "/NoDecompile") )
+		{
+			Util_ShowInfoIDS(IDS_E_NODECOMPILE);
+			return false;
+		}
 		else if ( szTemp[0] != '\0' )	// not /out /icon /pass or blank - error
 		{
 			Util_ShowInfoIDS(IDS_CMDLINEPARAMS);
