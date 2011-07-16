@@ -824,7 +824,7 @@ bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass)
 
 	// Build the packer command line, used here or at the end of this function.
 	//sprintf(szCmdLine, "\"%supx.exe\" --best --filter=73 --lzma --compress-icons=0 \"%s\""
-	sprintf(szCmdLine, "\"%smpress.exe\" -x \"%s\""
+	sprintf(szCmdLine, "\"%smpress.exe\" -q -x \"%s\""
 			, m_szAut2ExeDir // Contains a trailing backslash.
 			, szDest);
 
