@@ -37,11 +37,7 @@
 #include "application.h"
 #include "util.h"
 // #include "lib\exearc_write.h" // AutoHotkey: This needs to be included in the application.h instead.
-#include "astring_datatype.h"
-#include "token_datatype.h"
-#include "vector_token_datatype.h"
 #include "changeicon.h"
-#include "scriptfile.h"
 #include <Shlobj.h> // for SHGetFolderPath
 
 
@@ -2121,20 +2117,11 @@ ResultType LoadIncludedFile(FILE *aTarget, HWND aStatusBar, EXEArc_Write &oWrite
 
 bool App::ScriptRead(const char *szFile, FILE *fScript, EXEArc_Write &oWrite, char *aOutputScriptFilename) // AutoHotkey: added last two params.
 {
-	AutoIt_ScriptFile	oFile;
 //	const char			*szScriptLine;
 	char				szAut2Exe[_MAX_PATH+1];
 	char				szVersion[43+1];
 //	int					nAutScriptLine;
 	int					nScriptLine = 1;		// 1 is the first line
-
-	// AutoHotkey:
-	// Use the scriptfile object to read the file and do any includes/line continuations
-	//if (oFile.LoadScript(szFile) == false)
-	//{
-	//	fclose(fScript);
-	//	return false;
-	//}
 
 	// Get version of this compiler and add it as the first line of the script
 	GetModuleFileName(NULL, szAut2Exe, _MAX_PATH);
@@ -2142,13 +2129,6 @@ bool App::ScriptRead(const char *szFile, FILE *fScript, EXEArc_Write &oWrite, ch
 	fputs("; <COMPILER: v", fScript);
 	fputs(szVersion, fScript);
 	fputs(">\n", fScript);
-
-	// AutoHotkey:
-	//while ( (szScriptLine = oFile.GetLine(nScriptLine++, nAutScriptLine)) != NULL)
-	//{
-	//	fputs(szScriptLine, fScript);
-	//	fputs("\n", fScript);						// Remember, we stripped these before...
-	//}
 
 	// AutoHotkey: Compresses the FileInstall files first, rather than last like AutoIt3:
 	for (int i = 0; i < sSourceFileCount; ++i) // In case user has previously pressed the Compile button and now wants to compile something else, reset list of included files.

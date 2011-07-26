@@ -24,7 +24,6 @@
 
 
 // Include
-#include "vector_token_datatype.h"
 #include "lib\exearc_write.h" // AutoHotkey: Added.
 
 
@@ -85,13 +84,6 @@ private:
 	bool		ConvertCheckFilenames(const char *szSource, char *szDest);
 
 	bool		CmdLineMode(void);
-
-
-	// Lexer functions (lexer.cpp)
-	void		Lexer(const char *szLine, VectorToken &vLineToks);	// Convert a string into tokens
-	void		Lexer_String(const char *szLine, uint &iPos, char *szTemp);
-	void		Lexer_Number(const char *szLine, uint &iPos, Token &rtok, char *szTemp);
-	void		Lexer_KeywordOrFunc(const char *szLine, uint &iPos, Token &rtok, char *szTemp);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
