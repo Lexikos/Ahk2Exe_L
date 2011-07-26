@@ -139,7 +139,6 @@ BOOL App::Create(int nCmdShow)
 
 	// Set any defaults for the dialog
 	SetDlgItemText(g_hWnd, IDC_ICONEDIT, m_szLastIcon);
-	SendDlgItemMessage(g_hWnd, IDC_PASSEDIT, EM_LIMITTEXT, MAX_PASSLEN, 0);
 #ifdef SHOW_COMPRESSION_MENU
 	CheckMenuItem(GetMenu(g_hWnd), ID_COMPRESSION_LOWEST + m_dwLastCompression, MF_CHECKED);
 #endif
@@ -262,8 +261,6 @@ void App::Command(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 	char			szSource[_MAX_PATH+1];
 	char			szDest[_MAX_PATH+1];
 	char			szIcon[_MAX_PATH+1];
-	char			szPass[MAX_PASSLEN+1];
-	char			szPassVerify[MAX_PASSLEN+1];
 
 	char			szDrive[_MAX_DRIVE];
 	char			szDir[_MAX_DIR];
@@ -345,13 +342,6 @@ void App::Command(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			SetFocus(hCtrl);
 			break;
 
-		case IDC_PASSDEFAULT:
-			SetDlgItemText(hWnd, IDC_PASSEDIT, "");
-			SetDlgItemText(hWnd, IDC_PASSVERIFY, "");
-
-			SetFocus(hCtrl);
-			break;
-
 #ifdef SHOW_COMPRESSION_MENU
 		case ID_COMPRESSION_LOWEST:
 		case ID_COMPRESSION_LOW:
@@ -374,18 +364,10 @@ void App::Command(HWND hWnd, UINT iMsg, WPARAM wParam, LPARAM lParam)
 			GetDlgItemText(hWnd, IDC_SOURCEEDIT, szSource, _MAX_PATH);
 			GetDlgItemText(hWnd, IDC_DESTEDIT, szDest, _MAX_PATH);
 			GetDlgItemText(hWnd, IDC_ICONEDIT, szIcon, _MAX_PATH);
-			GetDlgItemText(hWnd, IDC_PASSEDIT, szPass, _MAX_PATH);
-			GetDlgItemText(hWnd, IDC_PASSVERIFY, szPassVerify, _MAX_PATH);
 
-			// Check that passphrases match, if so compile
-			if ( !strcmp(szPass, szPassVerify) )
-			{
-				// Run conversion
-				if ( Convert(szSource, szDest, szIcon, szPass) == true )
-					Util_ShowInfoIDS(IDS_CONVERTCOMPLETE);
-			}
-			else
-				Util_ShowErrorIDS(IDS_E_PASSVERIFY);
+			// Run conversion
+			if ( Convert(szSource, szDest, szIcon) == true )
+				Util_ShowInfoIDS(IDS_CONVERTCOMPLETE);
 
 			SetFocus(hCtrl);
 			break;
@@ -601,7 +583,6 @@ bool App::CmdLineMode(void)
 	char	szOut[CMDLINE_MAXLEN+1];
 	char	szIcon[CMDLINE_MAXLEN+1];
 	char	szTemp[CMDLINE_MAXLEN+1];
-	char	szPass[MAX_PASSLEN+1];
 	int		i;
 
 	// aut2exe.exe /in nnnn [/out nnnn] [/icon nnnn] [/pass nnnn]
@@ -611,7 +592,6 @@ bool App::CmdLineMode(void)
 	szIn[0]		= '\0';
 	szOut[0]	= '\0';
 	szIcon[0]	= '\0';
-	szPass[0]	= '\0';
 
 	// Any params? (should always be 1 -- 1st param is aut2exe.exe )
 	if ( g_oCmdLine.GetNumParams() == 1 )
@@ -646,10 +626,13 @@ bool App::CmdLineMode(void)
 			g_oCmdLine.GetNextParam(szOut);
 		else if ( !_stricmp(szTemp, "/icon") )
 			g_oCmdLine.GetNextParam(szIcon);
-		else if ( !_stricmp(szTemp, "/pass") )
-			g_oCmdLine.GetNextParam(szPass);
 		else if ( !_stricmp(szTemp, "/bin") )
 			g_oCmdLine.GetNextParam(m_szAutoItSC);
+		else if ( !_stricmp(szTemp, "/pass") )
+		{
+			Util_ShowInfoIDS(IDS_E_PASSWORD);
+			return false;
+		}
 		else if ( !_stricmp(szTemp, "/NoDecompile") )
 		{
 			Util_ShowInfoIDS(IDS_E_NODECOMPILE);
@@ -674,7 +657,7 @@ bool App::CmdLineMode(void)
 	//GetLongPathName(szOut, szOut, _MAX_PATH);
 
 	// OK, run the conversion
-	if (Convert(szIn, szOut, szIcon, szPass)) // v1.0.42.08: To support compiling from inside editors such as PSPad (by Toralf).
+	if (Convert(szIn, szOut, szIcon)) // v1.0.42.08: To support compiling from inside editors such as PSPad (by Toralf).
 		printf("Successfully compiled: %s\n", szOut);
 	else
 		printf("Failed to compile: %s\n", szOut);
@@ -720,7 +703,7 @@ bool App::ConvertCheckFilenames(const char *szSource, char *szDest)
 // True = success
 ///////////////////////////////////////////////////////////////////////////////
 
-bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass)
+bool App::Convert(char *szSource, char *szDest, char *szIcon)
 {
 	char	szScriptTemp[_MAX_PATH+1];
 	char	szTempPath[_MAX_PATH+1];
@@ -826,7 +809,7 @@ bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass)
 		
 	// Open our exe file for archive operations (max compression - range is 0-4)
 	EXEArc_Write	oWrite;
-	if ( oWrite.Open(szDest, szPass, m_dwLastCompression) != HS_EXEARC_E_OK )
+	if ( oWrite.Open(szDest, m_dwLastCompression) != HS_EXEARC_E_OK )
 	{
 		Util_ShowErrorIDS(IDS_E_CREATEARCHIVE);
 		return false;
@@ -851,7 +834,7 @@ bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass)
 	// Compile!!!!!
 	// Use a different filename if the script has a custom icon so that the self-contained EXE
 	// can detect whether it's safe to use the special green icons for the tray in Win95/98/NT/2000:
-	if ( CompileScript(szScriptTemp, szDest, szPass, oWrite, *szIcon ? ">AHK WITH ICON<" : ">AUTOHOTKEY SCRIPT<") == false)
+	if ( CompileScript(szScriptTemp, szDest, oWrite, *szIcon ? ">AHK WITH ICON<" : ">AUTOHOTKEY SCRIPT<") == false)
 	{
 		SetCursor(LoadCursor(NULL, IDC_ARROW));	// Reset cursor
 		SetCurrentDirectory(szOldWorkingDir);	// Reset working directory
@@ -2228,8 +2211,7 @@ bool App::ScriptRead(const char *szFile, FILE *fScript, EXEArc_Write &oWrite, ch
 // to the destination exe file
 ///////////////////////////////////////////////////////////////////////////////
 
-bool App::CompileScript(char *szScript, char *szDest, char *szPass, EXEArc_Write &oWrite
-	, char *aInternalScriptName) // AutoHotkey: added last 2 params.
+bool App::CompileScript(char *szScript, char *szDest, EXEArc_Write &oWrite, char *aInternalScriptName) // AutoHotkey: added last 2 params.
 {
 	char			szBuffer[AUT_MAX_LINESIZE+1];
 

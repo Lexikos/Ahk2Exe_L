@@ -36,7 +36,6 @@ typedef unsigned long 	ulong;
 
 // Match these with those in the main AutoIt source code
 #define AUT_MAX_LINESIZE	4095				// Max size for a line of script - match with AutoIt.h
-#define MAX_PASSLEN	64
 
 // AutoHotkey: I changed the main Icon ID to match this value (could have been done here more
 // easily, but I was having trouble getting a custom icon to be injected into a compiled script

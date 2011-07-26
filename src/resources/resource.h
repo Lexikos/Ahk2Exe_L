@@ -34,11 +34,6 @@
 #define IDC_ICONDEFAULT                 1024
 #define IDC_DESTEDIT                    1025
 #define IDC_ICONEDIT                    1026
-#define IDC_PASSEDIT                    1027
-#define IDC_PASSVERIFY                  1028
-#define IDC_PASSDEFAULT                 1029
-#define IDC_PASSLABEL1                  1030
-#define IDC_PASSLABEL2                  1031
 #define ID_CONVERT                      40001
 #define IDS_MENU_CONVERT                40001
 #define IDS_TOOLTIP_CONVERT             40002
@@ -65,13 +60,13 @@
 #define IDS_CONVERTCOMPLETE             41010
 #define IDS_CMDLINEPARAMS               41011
 #define IDS_E_EXEINTEGRITY              41012
-#define IDS_E_PASSVERIFY                41013
 #define IDS_E_TEMPFILE                  41014
 #define IDS_E_SCRIPTREAD                41015
 #define IDS_E_CREATEARCHIVE             41016
 #define IDS_E_FILEINSTALLSYNTAX         41017
 #define IDS_E_UPXRUN                    41018
 #define IDS_E_NODECOMPILE				41019
+#define IDS_E_PASSWORD					41020
 
 // Next default values for new objects
 // 

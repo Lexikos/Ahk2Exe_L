@@ -56,7 +56,7 @@ IDI_MAIN                ICON                    "AutoIt_Multi.ico"
 // Dialog
 //
 
-IDD_MAIN DIALOGEX 0, 0, 396, 265
+IDD_MAIN DIALOGEX 0, 0, 396, 218
 STYLE DS_SETFONT | DS_3DLOOK | DS_CENTER | WS_MINIMIZEBOX | WS_POPUP | 
     WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 CAPTION "Ahk2Exe v1.0.48.05.L -- Script to EXE Converter"
@@ -74,20 +74,12 @@ BEGIN
     LTEXT           "&Destination (.exe file)",IDC_STATIC,11,111,66,8
     EDITTEXT        IDC_DESTEDIT,91,108,210,14,ES_AUTOHSCROLL | WS_DISABLED
     PUSHBUTTON      "B&rowse",IDC_DESTFILE,306,108,35,14
-    GROUPBOX        "Optional Parameters",IDC_STATIC,7,135,380,82
+    GROUPBOX        "Optional Parameters",IDC_STATIC,7,135,380,35
     LTEXT           "Custom Icon (.ico file)",IDC_STATIC,12,151,68,8
     EDITTEXT        IDC_ICONEDIT,92,148,210,14,ES_AUTOHSCROLL | WS_DISABLED
     PUSHBUTTON      "Br&owse",IDC_ICONFILE,307,148,35,14
     PUSHBUTTON      "D&efault",IDC_ICONDEFAULT,346,148,35,14
-    LTEXT           "&Passphrase",IDC_PASSLABEL1,12,176,38,8
-    EDITTEXT        IDC_PASSEDIT,92,173,210,14,ES_PASSWORD | ES_AUTOHSCROLL
-    LTEXT           "&Verify passphrase",IDC_PASSLABEL2,12,191,76,8
-    EDITTEXT        IDC_PASSVERIFY,92,189,210,14,ES_PASSWORD | 
-                    ES_AUTOHSCROLL
-    PUSHBUTTON      "Def&ault",IDC_PASSDEFAULT,307,180,35,14
-    LTEXT           "Note: Passphrase protection is not available in x64 builds.",
-                    IDC_STATIC,17,204,362,10
-    DEFPUSHBUTTON   "> &Convert <",ID_CONVERT,172,219,50,17
+    DEFPUSHBUTTON   "> &Convert <",ID_CONVERT,172,172,50,17
     CONTROL         "",IDC_STATIC,"Static",SS_BLACKFRAME | SS_SUNKEN,7,72,
                     380,1
 END
@@ -292,13 +284,12 @@ BEGIN
     IDS_E_PARSESCBIN        "Error changing icon: Unable to parse AutoIt binary file."
     IDS_CONVERTCOMPLETE     "Conversion complete."
     IDS_CMDLINEPARAMS       "Command Line Parameters:\n\nAhk2Exe.exe /in infile.ahk [/out outfile.exe] [/icon iconfile.ico] [/pass password] [/bin AutoHotkeySC.bin]"
-    IDS_E_PASSVERIFY        "Error: The two passphrases you entered do not match."
     IDS_E_TEMPFILE          "Error: Unable to create temporary files."
     IDS_E_SCRIPTREAD        "Error: An error was encountered while trying to read in the script file and/or include files."
     IDS_E_CREATEARCHIVE     "Error: Unable to create the compiled archive."
     IDS_E_FILEINSTALLSYNTAX "Error: Invalid ""FileInstall"" syntax found. "
-    IDS_E_UPXRUN            "Error: Unable to execute upx.exe to compress stub file."
 	IDS_E_NODECOMPILE		"Error: /NoDecompile is not supported."
+	IDS_E_PASSWORD			"Error: Password protection is not supported."
 END
 
 #endif    // English (U.K.) resources

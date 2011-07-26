@@ -33,7 +33,7 @@ private:
 public:
 	EXEArc_Write() : m_res(NULL) {}
 
-	int Open(const char *szEXEArcFile, const char *szPwd, UINT nCompressionLevel);
+	int Open(const char *szEXEArcFile, UINT nCompressionLevel);
 	int FileAdd(const char *szFileName, const char *szFileID);
 	int Save(const char *szEXEArcFile);
 	void Close();

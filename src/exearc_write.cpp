@@ -6,7 +6,7 @@
 #include "lib\exearc_write.h"
 
 
-int EXEArc_Write::Open(const char *szEXEArcFile, const char *szPwd, UINT nCompressionLevel)
+int EXEArc_Write::Open(const char *szEXEArcFile, UINT nCompressionLevel)
 {
 	HANDLE res;
 	if (res = BeginUpdateResource(szEXEArcFile, FALSE))
