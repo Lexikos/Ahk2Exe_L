@@ -143,10 +143,6 @@ BOOL App::Create(int nCmdShow)
 #ifdef SHOW_COMPRESSION_MENU
 	CheckMenuItem(GetMenu(g_hWnd), ID_COMPRESSION_LOWEST + m_dwLastCompression, MF_CHECKED);
 #endif
-	WORD machine = Util_GetFileMachine(m_szAutoItSC);
-	if (machine && machine != IMAGE_FILE_MACHINE_I386)
-		for (int i = IDC_PASSEDIT; i <= IDC_PASSLABEL2; ++i)
-			EnableWindow(GetDlgItem(g_hWnd, i), FALSE);
 
 
 	// Process the message loop
@@ -791,49 +787,6 @@ bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass)
 		}
 	}
 
-	
-	// SOME OF THE FOLLOWING COMMENT IS OBSOLETE:
-	// Currently some work is repeated:
-	//
-	//	1) ChangeResources() and oWrite.Open() both use their own CResourceEditor. This involves:
-	//		a) Opening, reading and closing the file and "deserializing" the resource section.
-	//		b) "Serializing" the resource section, opening, overwriting and closing the file.
-	//
-	//	2) Below makes a decision about which method will be used (HS_EXEArc_Write or PE resources)
-	//	   by checking the target architecture of the file. This is done again in oWrite.Open(),
-	//	   but in that instance it passes the file data on to CResourceEditor.
-	//
-	// This could be optimized by reading the file into memory only once, initializing one
-	// CResourceEditor for use wherever needed, and saving resources back to file when done.
-	// However, the resource editor probably must be closed before calling HS_EXEArc_Write::Open().
-	// Since it isn't certain how permanent the current x86/x64 implementations are, optimization
-	// at this point doesn't seem worthwhile.
-
-	// If HS_EXEArc_Write will be used, the exe must be packed first since packing would
-	// corrupt the archive. If PE resources will be used instead, packing should be done
-	// later so that the script and FileInstalls are compressed, giving them some measure
-	// of protection depending on the packer.
-	//
-	// Consider packing non-critical: if Util_GetFileMachine fails, just continue.
-	// (However, those instances will probably fail at a later stage anyway.)
-	bool packNow = false, packLater = false;
-	WORD machine;
-	if (machine = Util_GetFileMachine(szDest))
-		packLater = !(packNow = (machine == IMAGE_FILE_MACHINE_I386));
-
-
-	// Build the packer command line, used here or at the end of this function.
-	//sprintf(szCmdLine, "\"%supx.exe\" --best --filter=73 --lzma --compress-icons=0 \"%s\""
-	sprintf(szCmdLine, "\"%smpress.exe\" -q -x \"%s\""
-			, m_szAut2ExeDir // Contains a trailing backslash.
-			, szDest);
-
-	if (packNow)
-	{
-		// Compress the stub file
-		StatusbarWrite("Compressing stub executable...");
-		Util_Run(szCmdLine, m_szAut2ExeDir, SW_HIDE, true);
-	}
 
 	StatusbarWrite(IDS_READY);		// Reset statusbar
 
@@ -909,12 +862,13 @@ bool App::Convert(char *szSource, char *szDest, char *szIcon, char *szPass)
 	}
 	oWrite.Close(); // AutoHotkey: added.
 
-	if (packLater)
-	{
-		// Compress the final executable
-		StatusbarWrite("Compressing final executable...");
-		Util_Run(szCmdLine, m_szAut2ExeDir, SW_HIDE, true);
-	}
+	// Compress the final executable
+	StatusbarWrite("Compressing final executable...");
+	//sprintf(szCmdLine, "\"%supx.exe\" --best --filter=73 --lzma --compress-icons=0 \"%s\""
+	sprintf(szCmdLine, "\"%smpress.exe\" -q -x \"%s\""
+			, m_szAut2ExeDir // Contains a trailing backslash.
+			, szDest);
+	Util_Run(szCmdLine, m_szAut2ExeDir, SW_HIDE, true);
 
 	// Change cursor back to an arrow
 	SetCursor(LoadCursor(NULL, IDC_ARROW));

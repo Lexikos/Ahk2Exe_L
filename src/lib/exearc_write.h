@@ -5,7 +5,7 @@
 // exearc_write.h
 // (c)2002 Jonathan Bennett (jon@hiddensoft.com)
 //
-// Version: v3
+// Mostly rewritten by Lexikos to replace EXEarc with Win32 Resource API.
 //
 // STANDALONE CLASS
 //
@@ -26,48 +26,12 @@
 #define HS_EXEARC_MAXPWDLEN			256
 
 
-// Table of contents linked list
-typedef struct HS_EXEArc_TOC
-{
-	char	szFileID[_MAX_PATH+1];					// File ID (usually filename)
-	struct 	HS_EXEArc_TOC *lpNext;					// Next entry in linked list
-
-} _HS_EXEArc_TOC;
-
-
-class HS_EXEArc_Write
-{
-public:
-	// Functions
-	int		Open(const char *szEXEArcFile, const char *szPwd, UINT nCompressionLevel);
-	void	Close(void);
-	int		FileAdd(const char *szFileName, const char *szFileID);
-
-private:
-	// Variables
-	FILE	*m_fEXE;
-	ULONG	m_nArchivePtr;
-	char	m_szPwd[HS_EXEARC_MAXPWDLEN+1];
-	UINT	m_nPwdHash;
-	UINT	m_nCompressionLevel;
-
-	HS_EXEArc_TOC	*m_lpTOC;					// Pointer to the table of contents
-
-	// Functions
-	void	Encrypt(UCHAR *bData, UINT nLen, UINT nSeed);
-	bool	FileGetTime(const char *szFileName, FILETIME &ftCreated, FILETIME &ftModified);
-
-};
-
-
-// Abstraction for x64:
 class EXEArc_Write
 {
 private:
-	HS_EXEArc_Write *m_arc; // x86
 	HANDLE			 m_res; // x64
 public:
-	EXEArc_Write() : m_arc(NULL), m_res(NULL) {}
+	EXEArc_Write() : m_res(NULL) {}
 
 	int Open(const char *szEXEArcFile, const char *szPwd, UINT nCompressionLevel);
 	int FileAdd(const char *szFileName, const char *szFileID);

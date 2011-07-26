@@ -8,51 +8,18 @@
 
 int EXEArc_Write::Open(const char *szEXEArcFile, const char *szPwd, UINT nCompressionLevel)
 {
-	FILE		*farc;
-
-	if ( !(farc = fopen(szEXEArcFile, "rb")) )
-		return HS_EXEARC_E_OPENEXE;
-
-	IMAGE_DOS_HEADER dosHeader;
-	IMAGE_NT_HEADERS ntHeaders;
-	if (fread(&dosHeader, sizeof(dosHeader), 1, farc) != 1
-		|| fseek(farc, dosHeader.e_lfanew, SEEK_SET) != 0
-		|| fread(&ntHeaders, sizeof(ntHeaders), 1, farc) != 1)
+	HANDLE res;
+	if (res = BeginUpdateResource(szEXEArcFile, FALSE))
 	{
-		fclose(farc);
-		return HS_EXEARC_E_NOTARC;
+		m_res = res;
+		return HS_EXEARC_E_OK;
 	}
-	fclose(farc);
-	
-	if (ntHeaders.FileHeader.Machine == IMAGE_FILE_MACHINE_I386)
-	{
-		// Safe to use HS_EXEArc_Write on this binary.
-		if (m_arc = new HS_EXEArc_Write)
-		{
-			return m_arc->Open(szEXEArcFile, szPwd, nCompressionLevel);
-		}
-		return HS_EXEARC_E_MEMALLOC;
-	}
-	else
-	{
-		HANDLE res;
-		// Store script as a resource on x64 since ExeArc is 32-bit.
-		if (res = BeginUpdateResource(szEXEArcFile, FALSE))
-		{
-			m_res = res;
-			return HS_EXEARC_E_OK;
-		}
-		return HS_EXEARC_E_OPENEXE;
-	}
+	return HS_EXEARC_E_OPENEXE;
 }
 
 
 int EXEArc_Write::FileAdd(const char *szFileName, const char *szFileID)
 {
-	if (m_arc)
-	{
-		return m_arc->FileAdd(szFileName, szFileID);
-	}
 	if (m_res)
 	{
 		char szTempFileID[MAX_PATH];
@@ -98,8 +65,6 @@ void EXEArc_Write::Close()
 		EndUpdateResource(m_res, FALSE);
 		m_res = NULL;
 	}
-	if (m_arc)
-		m_arc->Close();
 }
 
 
